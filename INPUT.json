@@ -1,0 +1,22 @@
+{
+  "domain": "samapura.store",
+  "product_handles": [],
+  "auto_discover": true,
+  "max_products": 10,
+  "max_concurrent": 50,
+  "timeout_seconds": 30,
+  "output_format": "json",
+  "filters": {},
+  "extraction": {
+    "include_custom_fields": false
+  },
+  "performance": {
+    "enable_http2": false,
+    "enable_connection_pooling": true,
+    "enable_compression": true,
+    "enable_caching": false,
+    "enable_retries": true,
+    "max_retries": 3,
+    "retry_delay_ms": 1000
+  }
+}

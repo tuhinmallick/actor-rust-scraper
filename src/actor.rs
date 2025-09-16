@@ -43,20 +43,47 @@ impl Actor {
         let dataset;
         if is_on_apify() || force_cloud {
             if is_default {
+                let dataset_id = env::var("APIFY_DEFAULT_DATASET_ID")
+                    .map_err(|_| "APIFY_DEFAULT_DATASET_ID environment variable not set")?;
                 dataset = DatasetHandle {
-                    id: env::var("APIFY_DEFAULT_DATASET_ID").unwrap(),
+                    id: dataset_id,
                     name: "default".to_string(),
                     is_on_cloud: true,
                     client: Arc::clone(&self.client),
                 }
             } else {
-                // For now, create a local dataset even for cloud
+                // Create cloud dataset using Apify API
                 let name = dataset_name_or_id.unwrap_or("default");
-                std::fs::create_dir_all(format!("apify_storage/datasets/{}", name))?;
+                let token = env::var("APIFY_TOKEN")
+                    .map_err(|_| "APIFY_TOKEN environment variable not set")?;
+                let url = "https://api.apify.com/v2/acts/apify~dataset/run-sync";
+                
+                let payload = serde_json::json!({
+                    "name": name
+                });
+                
+                let response = self.client
+                    .post(url)
+                    .header("Authorization", format!("Bearer {}", token))
+                    .header("Content-Type", "application/json")
+                    .json(&payload)
+                    .send()
+                    .await?;
+                
+                if !response.status().is_success() {
+                    return Err(format!("Failed to create cloud dataset: {}", response.status()).into());
+                }
+                
+                let dataset_info: serde_json::Value = response.json().await?;
+                let dataset_id = dataset_info.get("data")
+                    .and_then(|d| d.get("id"))
+                    .and_then(|id| id.as_str())
+                    .ok_or("Failed to get dataset ID from response")?;
+                
                 dataset = DatasetHandle {
-                    id: name.to_string(),
+                    id: dataset_id.to_string(),
                     name: name.to_string(),
-                    is_on_cloud: false,
+                    is_on_cloud: true,
                     client: Arc::clone(&self.client),
                 }
             }

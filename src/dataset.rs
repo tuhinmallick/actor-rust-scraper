@@ -18,12 +18,14 @@ impl DatasetHandle {
         -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         if self.is_on_cloud {
             // For cloud datasets, use Apify API directly
-            let token = env::var("APIFY_TOKEN")?;
-            let url = format!("https://api.apify.com/v2/datasets/{}/items?token={}", self.id, token);
+            let token = env::var("APIFY_TOKEN")
+                .map_err(|_| "APIFY_TOKEN environment variable not set")?;
+            let url = format!("https://api.apify.com/v2/datasets/{}/items", self.id);
             
             let json_data = serde_json::to_string(data)?;
             let response = self.client
                 .post(&url)
+                .header("Authorization", format!("Bearer {}", token))
                 .header("Content-Type", "application/json")
                 .body(json_data)
                 .send()

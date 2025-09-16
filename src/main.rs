@@ -27,7 +27,10 @@ async fn main() -> Result<()> {
     let mut actor = Actor::new();
     
     // Load input from Apify or use default
-    let input = load_input().await?;
+    let input = load_input().await.map_err(|e| {
+        error!("Failed to load input: {}", e);
+        e
+    })?;
     
     info!("Scraper Configuration:");
     info!("Domain: {}", input.domain);
@@ -151,15 +154,10 @@ async fn load_input() -> Result<ScraperInput> {
 }
 
 async fn load_apify_input() -> Result<ScraperInput> {
-    use std::env;
-    use reqwest::Client;
+    use std::fs;
     
-    let default_kv = env::var("APIFY_DEFAULT_KEY_VALUE_STORE_ID")?;
-    let url = format!("https://api.apify.com/v2/key-value-stores/{}/records/INPUT", default_kv);
-    
-    let client = Client::builder().build()?;
-    let response = client.get(&url).send().await?;
-    let json_text = response.text().await?;
+    // Read INPUT.json from Apify's local storage
+    let json_text = fs::read_to_string("INPUT.json")?;
     
     // Parse the JSON input
     let input_value: Value = serde_json::from_str(&json_text)?;
