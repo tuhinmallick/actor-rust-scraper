@@ -37,7 +37,9 @@ impl ShopifyScraper {
         let mut client_builder = Client::builder()
             .timeout(Duration::from_secs(input.timeout_seconds))
             .user_agent(&config.user_agent)
-            .redirect(reqwest::redirect::Policy::limited(config.max_redirects));
+            .redirect(reqwest::redirect::Policy::limited(config.max_redirects))
+            .danger_accept_invalid_certs(true) // For Docker environments with SSL issues
+            .danger_accept_invalid_hostnames(true);
 
         // Apply performance optimizations
         if input.performance.enable_connection_pooling {
@@ -403,6 +405,8 @@ impl ShopifyScraper {
         let page = self.config.input.pagination.page;
         let enable_pagination = self.config.input.pagination.enable_pagination;
         
+        info!("Pagination config: limit={}, page={}, enable_pagination={}", limit, page, enable_pagination);
+        
         let urls_to_try = if enable_pagination {
             vec![
                 format!("{}/collections/all/products.json?limit={}&page={}", domain, limit, page),
@@ -417,14 +421,20 @@ impl ShopifyScraper {
             ]
         };
 
+        info!("URLs to try for {}: {:?}", domain, urls_to_try);
         for url in urls_to_try {
+            info!("Trying URL: {}", url);
             match self.client.get(&url).send().await {
                 Ok(response) if response.status() == reqwest::StatusCode::OK => {
+                    info!("Successfully fetched {}", url);
                     if url.ends_with(".json") {
                         // First, discover total number of pages by checking first page
                         let first_page_data: serde_json::Value = response.json().await?;
+                        info!("Parsed JSON response for {}", url);
                         if let Some(first_products) = first_page_data.get("products").and_then(|p| p.as_array()) {
+                            info!("Found products array with {} products", first_products.len());
                             if first_products.is_empty() {
+                                warn!("Products array is empty for {}, trying next URL", url);
                                 continue; // Try next URL
                             }
                             
@@ -523,6 +533,8 @@ impl ShopifyScraper {
                                       final_count, domain, max_pages);
                                 return Ok(all_handles);
                             }
+                        } else {
+                            warn!("No products array found in JSON response for {}", url);
                         }
                     } else if url.ends_with(".xml") {
                         let content = response.text().await?;
@@ -537,9 +549,13 @@ impl ShopifyScraper {
                         }
                     }
                 }
-                Ok(_) => continue, // Try next URL
+                Ok(response) => {
+                    warn!("Non-200 response for {}: {}", url, response.status());
+                    continue; // Try next URL
+                }
                 Err(e) => {
                     warn!("Failed to fetch {}: {}", url, e);
+                    warn!("Error details: {:?}", e);
                     continue;
                 }
             }

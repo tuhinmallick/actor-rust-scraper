@@ -117,6 +117,8 @@ impl LightningScraper {
             .brotli(true) // Enable compression
             .tcp_keepalive(Duration::from_secs(60))
             .tcp_nodelay(true) // Disable Nagle's algorithm
+            .danger_accept_invalid_certs(true) // For Docker environments with SSL issues
+            .danger_accept_invalid_hostnames(true)
             .build()?;
 
         let semaphore = Arc::new(Semaphore::new(config.global_max_concurrent));

@@ -106,7 +106,9 @@ impl MultiWebsiteScraper {
             .pool_max_idle_per_host(50) // Increased connection pooling
             .pool_idle_timeout(Duration::from_secs(90))
             .gzip(true)
-            .brotli(true);
+            .brotli(true)
+            .danger_accept_invalid_certs(true) // For Docker environments with SSL issues
+            .danger_accept_invalid_hostnames(true);
 
         let client = client_builder.build()?;
         let semaphore = Arc::new(Semaphore::new(config.global_max_concurrent));
