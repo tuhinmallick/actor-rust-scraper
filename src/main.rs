@@ -294,7 +294,7 @@ async fn load_apify_input() -> Result<ScraperInput> {
         domain: clean_domain.clone(),
         websites: input_value.get("websites")
             .and_then(|v| v.as_array())
-            .map(|arr| arr.iter().filter_map(|v| v.as_str().map(|s| clean_domain_url(s)).collect()))
+            .map(|arr| arr.iter().filter_map(|v| v.as_str().map(|s| clean_domain_url(s))).collect())
             .unwrap_or_else(|| vec![clean_domain]),
         multi_website_mode: input_value.get("multi_website_mode")
             .and_then(|v| v.as_bool())
