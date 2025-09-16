@@ -1,7 +1,8 @@
-// use crate::actor::Actor;
-use apify_client::client::{ApifyClient, IdOrName};
 use rand::Rng;
 use std::sync::Arc;
+use reqwest::Client;
+use std::env;
+
 // Handle for both local and cloud datasets. 
 // There are some fields that are useless but this is simpler now.
 #[derive(Clone)]
@@ -9,15 +10,32 @@ pub struct DatasetHandle {
     pub id: String,
     pub name: String,
     pub is_on_cloud: bool,
-    pub client: Arc<ApifyClient>, // A reference to the actor's client
+    pub client: Arc<Client>, // A reference to the actor's client
 }
 
 impl DatasetHandle {
     pub async fn push_data<T: serde::Serialize> (&self, data: &[T]) 
         -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         if self.is_on_cloud {
-            self.client.put_items(&IdOrName::Id(self.id.clone()), &data).send().await?;
+            // For cloud datasets, use Apify API directly
+            let token = env::var("APIFY_TOKEN")
+                .map_err(|_| "APIFY_TOKEN environment variable not set")?;
+            let url = format!("https://api.apify.com/v2/datasets/{}/items", self.id);
+            
+            let json_data = serde_json::to_string(data)?;
+            let response = self.client
+                .post(&url)
+                .header("Authorization", format!("Bearer {}", token))
+                .header("Content-Type", "application/json")
+                .body(json_data)
+                .send()
+                .await?;
+            
+            if !response.status().is_success() {
+                return Err(format!("Failed to push data to cloud dataset: {}", response.status()).into());
+            }
         } else {
+            // For local datasets, save to files
             for val in data.iter() {
                 let json = serde_json::to_string(&val)?;
                 let mut rng = rand::thread_rng();

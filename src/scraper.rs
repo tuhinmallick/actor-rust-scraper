@@ -49,7 +49,8 @@ impl ShopifyScraper {
         }
 
         if input.performance.enable_http2 {
-            client_builder = client_builder.http2_prior_knowledge();
+            // HTTP/2 is not available in this reqwest version
+            // client_builder = client_builder.http2_prior_knowledge();
         }
 
         let client = client_builder.build()?;

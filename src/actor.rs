@@ -1,30 +1,32 @@
 use std::sync::Arc;
-
-use apify_client::client::ApifyClient;
-
+use std::env;
+use reqwest::Client;
 use crate::utils::is_on_apify;
 use crate::dataset::DatasetHandle;
 
 #[derive(Clone)]
 pub struct Actor {
-    pub client: Arc<ApifyClient>,
+    pub client: Arc<Client>,
     // TODO: Probably wrap in mutex
     pub dataset_cache: std::collections::HashMap<String, crate::dataset::DatasetHandle>
 }
 
 impl Actor {
-    /// Creates new Actor handler and initiazes client
+    /// Creates new Actor handler and initializes client
     pub fn new () -> Actor {
-        let maybe_token = std::env::var("APIFY_TOKEN");
+        let client = Client::builder()
+            .build()
+            .expect("Failed to create HTTP client");
+        
         Actor {
-            client: Arc::new(ApifyClient::new(maybe_token.ok())),
+            client: Arc::new(client),
             dataset_cache: std::collections::HashMap::new(),
         }
     }
 
     pub async fn open_dataset(&mut self, dataset_name_or_id: Option<&str>, force_cloud: bool)
         -> Result<DatasetHandle, Box<dyn std::error::Error + Send + Sync>> {
-        if force_cloud && !self.client.optional_token.is_some() {
+        if force_cloud && !env::var("APIFY_TOKEN").is_ok() {
             panic!("Cannot open cloud dataset without a token! Add APIFY_TOKEN env var!")
         }
 
@@ -41,17 +43,46 @@ impl Actor {
         let dataset;
         if is_on_apify() || force_cloud {
             if is_default {
+                let dataset_id = env::var("APIFY_DEFAULT_DATASET_ID")
+                    .map_err(|_| "APIFY_DEFAULT_DATASET_ID environment variable not set")?;
                 dataset = DatasetHandle {
-                    id: std::env::var("APIFY_DEFAULT_DATASET_ID").unwrap(),
+                    id: dataset_id,
                     name: "default".to_string(),
                     is_on_cloud: true,
                     client: Arc::clone(&self.client),
                 }
             } else {
-                let cloud_dataset = self.client.create_dataset(dataset_name_or_id.unwrap()).send().await.unwrap();
+                // Create cloud dataset using Apify API
+                let name = dataset_name_or_id.unwrap_or("default");
+                let token = env::var("APIFY_TOKEN")
+                    .map_err(|_| "APIFY_TOKEN environment variable not set")?;
+                let url = "https://api.apify.com/v2/acts/apify~dataset/run-sync";
+                
+                let payload = serde_json::json!({
+                    "name": name
+                });
+                
+                let response = self.client
+                    .post(url)
+                    .header("Authorization", format!("Bearer {}", token))
+                    .header("Content-Type", "application/json")
+                    .json(&payload)
+                    .send()
+                    .await?;
+                
+                if !response.status().is_success() {
+                    return Err(format!("Failed to create cloud dataset: {}", response.status()).into());
+                }
+                
+                let dataset_info: serde_json::Value = response.json().await?;
+                let dataset_id = dataset_info.get("data")
+                    .and_then(|d| d.get("id"))
+                    .and_then(|id| id.as_str())
+                    .ok_or("Failed to get dataset ID from response")?;
+                
                 dataset = DatasetHandle {
-                    id: cloud_dataset.id,
-                    name: cloud_dataset.name.unwrap(),
+                    id: dataset_id.to_string(),
+                    name: name.to_string(),
                     is_on_cloud: true,
                     client: Arc::clone(&self.client),
                 }
@@ -60,7 +91,7 @@ impl Actor {
             let name = dataset_name_or_id.unwrap_or("default");
             // Will return error if the dir already exists
             // TODO: Handle properly
-            std::fs::create_dir(format!("apify_storage/datasets/{}", name))?;
+            std::fs::create_dir_all(format!("apify_storage/datasets/{}", name))?;
             dataset = DatasetHandle {
                 id: name.to_string(),
                 name: name.to_string(),
