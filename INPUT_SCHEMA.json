@@ -11,14 +11,6 @@
       "description": "The domain of the Shopify store to scrape (e.g., 'example.myshopify.com' or 'example.com')",
       "prefill": "samapura.store"
     },
-    "product_handles": {
-      "title": "Product Handles",
-      "type": "array",
-      "editor": "select",
-      "description": "Specific product handles to scrape. One per line. If empty, auto-discovery will be used.",
-      "items": { "type": "string" },
-      "prefill": []
-    },
     "auto_discover": {
       "title": "Auto Discover Products",
       "type": "boolean",
@@ -132,3 +124,4 @@
     }
   }
 }
+
