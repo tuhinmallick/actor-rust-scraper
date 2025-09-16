@@ -11,13 +11,6 @@
       "description": "The domain of the Shopify store to scrape (e.g., 'example.myshopify.com' or 'example.com')",
       "prefill": "samapura.store"
     },
-    "auto_discover": {
-      "title": "Auto Discover Products",
-      "type": "boolean",
-      "editor": "textfield",
-      "description": "Automatically discover products from the store. If false, product_handles must be provided.",
-      "default": true
-    },
     "max_products": {
       "title": "Maximum Products",
       "type": "integer",
@@ -124,4 +117,5 @@
     }
   }
 }
+
 
