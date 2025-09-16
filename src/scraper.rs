@@ -10,7 +10,6 @@ use tokio::sync::Semaphore;
 use tracing::{error, info, warn, debug};
 use url::Url;
 use once_cell::sync::Lazy;
-use std::collections::HashMap;
 
 /// Global regex patterns for performance
 static HANDLE_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"/products/([^/]+)").unwrap());
@@ -21,7 +20,6 @@ pub struct ShopifyScraper {
     semaphore: Arc<Semaphore>,
     timeout: Duration,
     config: ScraperConfig,
-    cache: Option<HashMap<String, ShopifyProduct>>,
 }
 
 impl ShopifyScraper {
@@ -48,25 +46,14 @@ impl ShopifyScraper {
             client_builder = client_builder.gzip(true).brotli(true);
         }
 
-        if input.performance.enable_http2 {
-            // HTTP/2 is not available in this reqwest version
-            // client_builder = client_builder.http2_prior_knowledge();
-        }
-
         let client = client_builder.build()?;
         let semaphore = Arc::new(Semaphore::new(input.max_concurrent));
-        let cache = if input.performance.enable_caching {
-            Some(HashMap::new())
-        } else {
-            None
-        };
 
         Ok(Self {
             client,
             semaphore,
             timeout: Duration::from_secs(input.timeout_seconds),
             config,
-            cache,
         })
     }
 
@@ -134,29 +121,9 @@ impl ShopifyScraper {
             }
         }
 
-        if !filters.tags_all.is_empty() {
-            if !filters.tags_all.iter().all(|tag| product.tags.contains(tag)) {
-                return false;
-            }
-        }
-
-        if !filters.tags_exclude.is_empty() {
-            if filters.tags_exclude.iter().any(|tag| product.tags.contains(tag)) {
-                return false;
-            }
-        }
-
         // Availability filter
         if let Some(availability) = filters.availability {
             if product.availability != availability {
-                return false;
-            }
-        }
-
-        // Inventory filter
-        if let Some(min_inventory) = filters.min_inventory {
-            let total_inventory: i32 = product.variants.iter().map(|v| v.inventory_quantity).sum();
-            if total_inventory < min_inventory {
                 return false;
             }
         }
@@ -169,15 +136,6 @@ impl ShopifyScraper {
             }
         }
 
-        // Handle pattern filter
-        if let Some(ref pattern) = filters.handle_pattern {
-            if let Ok(regex) = Regex::new(pattern) {
-                if !regex.is_match(&product.handle) {
-                    return false;
-                }
-            }
-        }
-
         true
     }
 
@@ -186,8 +144,6 @@ impl ShopifyScraper {
         let _permit = self.semaphore.acquire().await?;
         
         let url = format!("{}/products/{}.json", domain, product_handle);
-        
-        // TODO: Implement proper caching with Arc<Mutex<HashMap>>
 
         let mut attempts = 0;
         let max_attempts = if self.config.input.performance.enable_retries {
@@ -204,9 +160,6 @@ impl ShopifyScraper {
                             let api_response: ShopifyApiResponse = response.json().await?;
                             let product = api_response.product;
                             
-                            // Cache the result (simplified for now)
-                            // TODO: Implement proper caching with Arc<Mutex<HashMap>>
-                            
                             return Ok(Some(product));
                         }
                         reqwest::StatusCode::NOT_FOUND => {
@@ -217,7 +170,7 @@ impl ShopifyScraper {
                             warn!("Rate limited for {}", product_handle);
                             if attempts < max_attempts - 1 {
                                 tokio::time::sleep(Duration::from_millis(
-                                    self.config.input.performance.retry_delay_ms * (attempts + 1) as u64
+                                    1000 * (attempts + 1) as u64
                                 )).await;
                                 attempts += 1;
                                 continue;
@@ -234,7 +187,7 @@ impl ShopifyScraper {
                     error!("Error fetching {}: {}", product_handle, e);
                     if attempts < max_attempts - 1 {
                         tokio::time::sleep(Duration::from_millis(
-                            self.config.input.performance.retry_delay_ms * (attempts + 1) as u64
+                            1000 * (attempts + 1) as u64
                         )).await;
                         attempts += 1;
                         continue;
@@ -360,12 +313,6 @@ impl ShopifyScraper {
         })
     }
 
-    /// Helper method to convert canonical product back to raw format for caching
-    fn raw_from_canonical(&self, _product: ShopifyProduct) -> RawShopifyProduct {
-        // This is a simplified conversion - in practice, you'd want to store raw data in cache
-        todo!("Implement raw_from_canonical if needed for caching")
-    }
-
     /// Scrape a single product and return canonical format
     pub async fn scrape_product(&self, domain: &str, product_handle: &str) -> Result<Option<ShopifyProduct>> {
         let domain = self.normalize_domain(domain)?;
@@ -487,7 +434,6 @@ impl Clone for ShopifyScraper {
             semaphore: self.semaphore.clone(),
             timeout: self.timeout,
             config: self.config.clone(),
-            cache: None, // Don't clone cache to avoid memory issues
         }
     }
 }

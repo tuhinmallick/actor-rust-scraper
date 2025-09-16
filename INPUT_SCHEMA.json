@@ -14,7 +14,7 @@
     "product_handles": {
       "title": "Product Handles",
       "type": "array",
-      "editor": "textarea",
+      "editor": "select",
       "description": "Specific product handles to scrape. One per line. If empty, auto-discovery will be used.",
       "items": { "type": "string" },
       "prefill": []
@@ -72,38 +72,24 @@
         "currency": { "type": "string", "editor": "textfield", "description": "Currency filter (e.g., 'USD', 'EUR')" },
         "vendors": {
           "type": "array",
-          "editor": "textarea",
+          "editor": "select",
           "items": { "type": "string" },
-          "description": "Vendor filter - only products from these vendors (one per line)"
+          "description": "Vendor filter - only products from these vendors"
         },
         "product_types": {
           "type": "array",
-          "editor": "textarea",
+          "editor": "select",
           "items": { "type": "string" },
-          "description": "Product type filter (one per line)"
+          "description": "Product type filter"
         },
         "tags_any": {
           "type": "array",
-          "editor": "textarea",
+          "editor": "select",
           "items": { "type": "string" },
-          "description": "Products must have at least one of these tags (one per line)"
-        },
-        "tags_all": {
-          "type": "array",
-          "editor": "textarea",
-          "items": { "type": "string" },
-          "description": "Products must have all of these tags (one per line)"
-        },
-        "tags_exclude": {
-          "type": "array",
-          "editor": "textarea",
-          "items": { "type": "string" },
-          "description": "Products must not have any of these tags (one per line)"
+          "description": "Products must have at least one of these tags"
         },
         "availability": { "type": "boolean", "editor": "textfield", "description": "Product availability filter" },
-        "min_inventory": { "type": "integer", "editor": "textfield", "description": "Minimum inventory quantity" },
-        "search_query": { "type": "string", "editor": "textfield", "description": "Search query to filter products by title/description" },
-        "handle_pattern": { "type": "string", "editor": "textfield", "description": "Regex pattern to match product handles" }
+        "search_query": { "type": "string", "editor": "textfield", "description": "Search query to filter products by title/description" }
       }
     },
     "extraction": {
@@ -117,6 +103,18 @@
           "editor": "textfield",
           "description": "Include custom metafields",
           "default": false
+        },
+        "include_images": {
+          "type": "boolean",
+          "editor": "textfield",
+          "description": "Include product images",
+          "default": true
+        },
+        "include_variants": {
+          "type": "boolean",
+          "editor": "textfield",
+          "description": "Include product variants",
+          "default": true
         }
       }
     },
@@ -126,13 +124,10 @@
       "editor": "textarea",
       "description": "Performance optimization settings (JSON).",
       "properties": {
-        "enable_http2": { "type": "boolean", "editor": "textfield", "description": "Enable HTTP/2", "default": false },
         "enable_connection_pooling": { "type": "boolean", "editor": "textfield", "description": "Enable connection pooling", "default": true },
         "enable_compression": { "type": "boolean", "editor": "textfield", "description": "Enable compression", "default": true },
-        "enable_caching": { "type": "boolean", "editor": "textfield", "description": "Enable response caching", "default": false },
         "enable_retries": { "type": "boolean", "editor": "textfield", "description": "Enable automatic retries", "default": true },
-        "max_retries": { "type": "integer", "editor": "textfield", "description": "Maximum number of retries", "default": 3, "minimum": 0, "maximum": 10 },
-        "retry_delay_ms": { "type": "integer", "editor": "textfield", "description": "Delay between retries in milliseconds", "default": 1000, "minimum": 100, "maximum": 10000 }
+        "max_retries": { "type": "integer", "editor": "textfield", "description": "Maximum number of retries", "default": 3, "minimum": 0, "maximum": 10 }
       }
     }
   }
