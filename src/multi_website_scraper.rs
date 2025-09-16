@@ -313,15 +313,11 @@ impl MultiWebsiteScraper {
         
         let urls_to_try = if enable_pagination {
             vec![
-                format!("{}/collections/all/products.json?limit={}&page={}", domain, limit, page),
                 format!("{}/products.json?limit={}&page={}", domain, limit, page),
-                format!("{}/sitemap_products_1.xml", domain),
             ]
         } else {
             vec![
-                format!("{}/collections/all/products.json?limit={}", domain, limit),
                 format!("{}/products.json?limit={}", domain, limit),
-                format!("{}/sitemap_products_1.xml", domain),
             ]
         };
 

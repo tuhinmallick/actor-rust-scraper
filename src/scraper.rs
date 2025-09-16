@@ -409,15 +409,11 @@ impl ShopifyScraper {
         
         let urls_to_try = if enable_pagination {
             vec![
-                format!("{}/collections/all/products.json?limit={}&page={}", domain, limit, page),
                 format!("{}/products.json?limit={}&page={}", domain, limit, page),
-                format!("{}/sitemap_products_1.xml", domain),
             ]
         } else {
             vec![
-                format!("{}/collections/all/products.json?limit={}", domain, limit),
                 format!("{}/products.json?limit={}", domain, limit),
-                format!("{}/sitemap_products_1.xml", domain),
             ]
         };
 
@@ -429,8 +425,16 @@ impl ShopifyScraper {
                     info!("Successfully fetched {}", url);
                     if url.ends_with(".json") {
                         // First, discover total number of pages by checking first page
-                        let first_page_data: serde_json::Value = response.json().await?;
-                        info!("Parsed JSON response for {}", url);
+                        let first_page_data = match response.json::<serde_json::Value>().await {
+                            Ok(data) => {
+                                info!("Parsed JSON response for {}", url);
+                                data
+                            }
+                            Err(e) => {
+                                warn!("Failed to parse JSON for {}: {}", url, e);
+                                continue; // Try next URL
+                            }
+                        };
                         if let Some(first_products) = first_page_data.get("products").and_then(|p| p.as_array()) {
                             info!("Found products array with {} products", first_products.len());
                             if first_products.is_empty() {
@@ -459,11 +463,7 @@ impl ShopifyScraper {
                             
                             for page_num in 1..=max_pages {
                                 let client = self.client.clone();
-                                let page_url = if url.contains("collections/all") {
-                                    format!("{}/collections/all/products.json?page={}&limit={}", domain, page_num, limit)
-                                } else {
-                                    format!("{}/products.json?page={}&limit={}", domain, page_num, limit)
-                                };
+                                let page_url = format!("{}/products.json?page={}&limit={}", domain, page_num, limit);
                                 
                                 page_tasks.push(tokio::spawn(async move {
                                     match client.get(&page_url).send().await {
@@ -572,11 +572,7 @@ impl ShopifyScraper {
         let mut last_valid_page = 1;
         
         loop {
-            let test_url = if base_url.contains("collections/all") {
-                format!("{}/collections/all/products.json?page={}&limit={}", domain, page, limit)
-            } else {
-                format!("{}/products.json?page={}&limit={}", domain, page, limit)
-            };
+            let test_url = format!("{}/products.json?page={}&limit={}", domain, page, limit);
             
             match self.client.get(&test_url).send().await {
                 Ok(response) if response.status() == reqwest::StatusCode::OK => {
