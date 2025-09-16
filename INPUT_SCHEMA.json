@@ -12,6 +12,73 @@
       "editor": "textfield",
       "description": "The domain of the Shopify store to scrape (e.g., 'example.myshopify.com' or 'example.com')",
       "prefill": "samapura.store"
+    },
+    "websites": {
+      "title": "Multiple Websites",
+      "type": "array",
+      "editor": "stringList",
+      "description": "List of websites to scrape in multi-website mode",
+      "items": {
+        "type": "string"
+      }
+    },
+    "multi_website_mode": {
+      "title": "Multi-Website Mode",
+      "type": "boolean",
+      "editor": "checkbox",
+      "description": "Enable scraping multiple websites simultaneously",
+      "default": false
+    },
+    "max_products": {
+      "title": "Max Products per Site",
+      "type": "integer",
+      "editor": "number",
+      "description": "Maximum number of products to scrape per website",
+      "minimum": 1,
+      "maximum": 10000,
+      "default": 50
+    },
+    "max_concurrent": {
+      "title": "Concurrent Requests per Domain",
+      "type": "integer",
+      "editor": "number",
+      "description": "Maximum concurrent requests per domain",
+      "minimum": 1,
+      "maximum": 100,
+      "default": 10
+    },
+    "global_max_concurrent": {
+      "title": "Global Concurrent Requests",
+      "type": "integer",
+      "editor": "number",
+      "description": "Global maximum concurrent requests across all websites",
+      "minimum": 1,
+      "maximum": 200,
+      "default": 20
+    },
+    "auto_discover": {
+      "title": "Auto Discover Products",
+      "type": "boolean",
+      "editor": "checkbox",
+      "description": "Automatically discover products from the store",
+      "default": true
+    },
+    "timeout_seconds": {
+      "title": "Request Timeout (seconds)",
+      "type": "integer",
+      "editor": "number",
+      "description": "Request timeout in seconds",
+      "minimum": 5,
+      "maximum": 300,
+      "default": 15
+    },
+    "output_format": {
+      "title": "Output Format",
+      "type": "string",
+      "editor": "select",
+      "description": "Output format for scraped data",
+      "enum": ["Json", "JsonL", "Csv", "Xml", "Parquet"],
+      "default": "Json"
     }
   }
 }

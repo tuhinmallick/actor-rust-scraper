@@ -281,16 +281,21 @@ async fn load_apify_input() -> Result<ScraperInput> {
     // Parse the JSON input
     let input_value: Value = serde_json::from_str(&json_text)?;
     
+    // Extract and clean domain from input
+    let raw_domain = input_value.get("domain")
+        .and_then(|v| v.as_str())
+        .unwrap_or("samapura.store");
+    
+    // Clean domain (remove protocol and trailing slash)
+    let clean_domain = clean_domain_url(raw_domain);
+    
     // Convert to ScraperInput
     let input = ScraperInput {
-        domain: input_value.get("domain")
-            .and_then(|v| v.as_str())
-            .unwrap_or("samapura.store")
-            .to_string(),
+        domain: clean_domain.clone(),
         websites: input_value.get("websites")
             .and_then(|v| v.as_array())
-            .map(|arr| arr.iter().filter_map(|v| v.as_str().map(|s| s.to_string())).collect())
-            .unwrap_or_else(|| vec!["samapura.store".to_string()]),
+            .map(|arr| arr.iter().filter_map(|v| v.as_str().map(|s| clean_domain_url(s)).collect()))
+            .unwrap_or_else(|| vec![clean_domain]),
         multi_website_mode: input_value.get("multi_website_mode")
             .and_then(|v| v.as_bool())
             .unwrap_or(false),
@@ -331,4 +336,23 @@ async fn load_apify_input() -> Result<ScraperInput> {
     };
     
     Ok(input)
+}
+
+/// Clean domain URL by removing protocol and trailing slash
+fn clean_domain_url(url: &str) -> String {
+    let mut cleaned = url.to_string();
+    
+    // Remove protocol
+    if cleaned.starts_with("https://") {
+        cleaned = cleaned[8..].to_string();
+    } else if cleaned.starts_with("http://") {
+        cleaned = cleaned[7..].to_string();
+    }
+    
+    // Remove trailing slash
+    if cleaned.ends_with('/') {
+        cleaned = cleaned[..cleaned.len()-1].to_string();
+    }
+    
+    cleaned
 }
