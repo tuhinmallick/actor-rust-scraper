@@ -374,7 +374,7 @@ impl ShopifyScraper {
         Ok(products)
     }
 
-    /// Discover product handles from Shopify store
+    /// Discover product handles from Shopify store with parallel pagination
     pub async fn discover_products(&self, domain: &str, max_products: usize) -> Result<Vec<String>> {
         let domain = self.normalize_domain(domain)?;
 
@@ -389,27 +389,99 @@ impl ShopifyScraper {
             match self.client.get(&url).send().await {
                 Ok(response) if response.status() == reqwest::StatusCode::OK => {
                     if url.ends_with(".json") {
-                        let data: serde_json::Value = response.json().await?;
-                        if let Some(products) = data.get("products").and_then(|p| p.as_array()) {
-                            let handles: Vec<String> = products
-                                .iter()
-                                .take(max_products)
-                                .filter_map(|p| p.get("handle").and_then(|h| h.as_str()))
-                                .map(|s| s.to_string())
-                                .collect();
-                            if !handles.is_empty() {
-                                return Ok(handles);
+                        // First, discover total number of pages by checking first page
+                        let first_page_data: serde_json::Value = response.json().await?;
+                        if let Some(first_products) = first_page_data.get("products").and_then(|p| p.as_array()) {
+                            if first_products.is_empty() {
+                                continue; // Try next URL
+                            }
+                            
+                            // Determine total pages by checking if we got a full page
+                            let mut total_pages = 1;
+                            if first_products.len() == 250 { // Full page, likely more pages exist
+                                // Estimate total pages by trying a high page number
+                                total_pages = self.discover_total_pages(&domain, &url).await.unwrap_or(1);
+                            }
+                            
+                            info!("Discovered {} total pages for {}", total_pages, domain);
+                            
+                            // Create parallel tasks for all pages
+                            let mut page_tasks = Vec::new();
+                            for page in 1..=total_pages {
+                                let client = self.client.clone();
+                                let page_url = if url.contains("collections/all") {
+                                    format!("{}/collections/all/products.json?page={}&limit=250", domain, page)
+                                } else {
+                                    format!("{}/products.json?page={}&limit=250", domain, page)
+                                };
+                                
+                                page_tasks.push(tokio::spawn(async move {
+                                    match client.get(&page_url).send().await {
+                                        Ok(response) if response.status() == reqwest::StatusCode::OK => {
+                                            match response.json::<serde_json::Value>().await {
+                                                Ok(data) => {
+                                                    if let Some(products) = data.get("products").and_then(|p| p.as_array()) {
+                                                        let handles: Vec<String> = products
+                                                            .iter()
+                                                            .filter_map(|p| p.get("handle").and_then(|h| h.as_str()))
+                                                            .map(|s| s.to_string())
+                                                            .collect();
+                                                        Ok(handles)
+                                                    } else {
+                                                        Ok(Vec::new())
+                                                    }
+                                                }
+                                                Err(e) => Err(e),
+                                            }
+                                        }
+                                        Ok(_) => Ok(Vec::new()), // Empty page
+                                        Err(e) => Err(e.into()),
+                                    }
+                                }));
+                            }
+                            
+                            // Collect results from all parallel tasks
+                            let mut all_handles = Vec::new();
+                            for task in page_tasks {
+                                match task.await {
+                                    Ok(Ok(handles)) => {
+                                        all_handles.extend(handles);
+                                    }
+                                    Ok(Err(e)) => {
+                                        warn!("Error fetching page: {}", e);
+                                    }
+                                    Err(e) => {
+                                        warn!("Task error: {}", e);
+                                    }
+                                }
+                            }
+                            
+                            // Remove duplicates and limit if needed
+                            all_handles.sort();
+                            all_handles.dedup();
+                            
+                            if !all_handles.is_empty() {
+                                let final_count = if max_products > 0 && all_handles.len() > max_products {
+                                    all_handles.truncate(max_products);
+                                    max_products
+                                } else {
+                                    all_handles.len()
+                                };
+                                
+                                info!("Discovered {} products from {} (parallel pagination, {} pages)", 
+                                      final_count, domain, total_pages);
+                                return Ok(all_handles);
                             }
                         }
                     } else if url.ends_with(".xml") {
                         let content = response.text().await?;
                         let handles: Vec<String> = HANDLE_PATTERN
                             .captures_iter(&content)
-                            .take(max_products)
                             .filter_map(|cap| cap.get(1))
                             .map(|m| m.as_str().to_string())
                             .collect();
                         if !handles.is_empty() {
+                            info!("Discovered {} products from {} (sitemap)", handles.len(), domain);
                             return Ok(handles);
                         }
                     }
@@ -424,6 +496,53 @@ impl ShopifyScraper {
 
         warn!("Could not discover products automatically");
         Ok(vec![])
+    }
+
+    /// Discover total number of pages by binary search
+    async fn discover_total_pages(&self, domain: &str, base_url: &str) -> Result<usize> {
+        // Binary search to find the last page with products
+        let mut low = 1;
+        let mut high = 1000; // Start with a reasonable upper bound
+        let mut last_valid_page = 1;
+        
+        while low <= high {
+            let mid = (low + high) / 2;
+            let test_url = if base_url.contains("collections/all") {
+                format!("{}/collections/all/products.json?page={}&limit=250", domain, mid)
+            } else {
+                format!("{}/products.json?page={}&limit=250", domain, mid)
+            };
+            
+            match self.client.get(&test_url).send().await {
+                Ok(response) if response.status() == reqwest::StatusCode::OK => {
+                    match response.json::<serde_json::Value>().await {
+                        Ok(data) => {
+                            if let Some(products) = data.get("products").and_then(|p| p.as_array()) {
+                                if !products.is_empty() {
+                                    last_valid_page = mid;
+                                    low = mid + 1;
+                                } else {
+                                    high = mid - 1;
+                                }
+                            } else {
+                                high = mid - 1;
+                            }
+                        }
+                        Err(_) => {
+                            high = mid - 1;
+                        }
+                    }
+                }
+                Ok(_) => {
+                    high = mid - 1;
+                }
+                Err(_) => {
+                    high = mid - 1;
+                }
+            }
+        }
+        
+        Ok(last_valid_page)
     }
 }
 

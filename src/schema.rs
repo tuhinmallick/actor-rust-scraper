@@ -22,7 +22,7 @@ pub struct ScraperInput {
     #[serde(default = "default_true")]
     pub auto_discover: bool,
     
-    /// Maximum products to scrape per website
+    /// Maximum products to scrape per website (0 = unlimited)
     #[serde(default = "default_max_products")]
     pub max_products: usize,
     
@@ -257,7 +257,7 @@ impl Default for PerformanceSettings {
 // Default value functions
 fn default_true() -> bool { true }
 fn default_false() -> bool { false }
-fn default_max_products() -> usize { 1000 }
+fn default_max_products() -> usize { 0 }
 fn default_concurrent() -> usize { 100 }
 fn default_global_concurrent() -> usize { 200 }
 fn default_timeout() -> u64 { 30 }

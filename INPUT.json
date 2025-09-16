@@ -4,7 +4,7 @@
   "multi_website_mode": false,
   "product_handles": [],
   "auto_discover": true,
-  "max_products": 50,
+  "max_products": 0,
   "max_concurrent": 10,
   "global_max_concurrent": 20,
   "timeout_seconds": 15,

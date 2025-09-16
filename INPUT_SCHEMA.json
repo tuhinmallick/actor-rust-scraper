@@ -33,10 +33,10 @@
       "title": "Max Products per Site",
       "type": "integer",
       "editor": "number",
-      "description": "Maximum number of products to scrape per website",
-      "minimum": 1,
-      "maximum": 10000,
-      "default": 50
+      "description": "Maximum number of products to scrape per website (0 = unlimited)",
+      "minimum": 0,
+      "maximum": 100000,
+      "default": 0
     },
     "max_concurrent": {
       "title": "Concurrent Requests per Domain",
