@@ -1,78 +1,178 @@
 {
-    "title": "Rust crawler",
+    "title": "Shopify Lightning Scraper",
     "type": "object",
     "schemaVersion": 1,
-    "required": ["urls", "extract"],
+    "required": ["domain"],
     "properties": {
-        "urls": {
-            "title": "Start URLs",
+        "domain": {
+            "title": "Shopify Store Domain",
+            "type": "string",
+            "description": "The domain of the Shopify store to scrape (e.g., 'example.myshopify.com' or 'example.com')",
+            "prefill": "samapura.store"
+        },
+        "product_handles": {
+            "title": "Product Handles",
             "type": "array",
-            "description": "URLs that will be scraped. Must be an array of objects with \"url\" property.",
-            "prefill": [
-                { "url": "http://example.com" }
-            ],
-            "editor": "requestListSources"
+            "description": "Specific product handles to scrape. If empty, auto-discovery will be used.",
+            "items": {
+                "type": "string"
+            },
+            "prefill": []
         },
-        "extract": {
-            "title": "Extraction config",
-            "type": "array",
-            "description": "Array that defines what and how should be scraped from a page HTML. See readme for more info.",
-            "editor": "json",
-            "prefill": [
-                {
-                  "field_name": "title",
-                  "selector": "h1",
-                  "extract_type": {
-                    "type": "Text"
-                  }
-                },
-                {
-                  "field_name": "description",
-                  "selector": "p",
-                  "extract_type": {
-                    "type": "Text"
-                  }
-                }
-            ]
+        "auto_discover": {
+            "title": "Auto Discover Products",
+            "type": "boolean",
+            "description": "Automatically discover products from the store. If false, product_handles must be provided.",
+            "default": true
         },
-        "proxy_settings": {
-            "title": "Proxy configuration",
-            "type": "object",
-            "description": "Select proxies to be used by your crawler. For most use cases we recommend the default Apify automatic proxy.",
-            "prefill": { "useApifyProxy": true },
-            "editor": "proxy"
-        },
-        "max_concurrency": {
-            "title": "Max concurrency",
+        "max_products": {
+            "title": "Maximum Products",
             "type": "integer",
-            "description": "Sets the maximum concurrency (parallelism) for the crawl. Keep this is reasonable level because this scraper can go really fast.",
+            "description": "Maximum number of products to scrape",
             "default": 50,
-            "minimum": 1
+            "minimum": 1,
+            "maximum": 1000
         },
-        "max_request_retries": {
-            "title": "Max request retries",
+        "max_concurrent": {
+            "title": "Max Concurrent Requests",
             "type": "integer",
-            "description": "Sets the maximum number of retries for each request(URL).",
-            "default": 3,
-            "minimum": 1
+            "description": "Maximum number of concurrent requests",
+            "default": 100,
+            "minimum": 1,
+            "maximum": 500
         },
-        "debug_log": {
-            "title": "Debug log",
-            "type": "boolean",
-            "description": "Shows when each URL starts and ends scraping with timings. Don't use for larger runs as the log gets filled quickly.",
-            "default": false
-        },
-        "push_data_size": {
-            "title": "Push data buffer size",
+        "timeout_seconds": {
+            "title": "Request Timeout (seconds)",
             "type": "integer",
-            "description": "Buffers results into vector (array) before pushing to a dataset. This prevents overwhelming Apify API. The default number is usually a good choice.",
-            "default": 500
+            "description": "Timeout for each HTTP request in seconds",
+            "default": 30,
+            "minimum": 5,
+            "maximum": 300
         },
-        "force_cloud": {
-            "title": "Force cloud",
-            "type": "boolean",
-            "description": "This allows local runs to use cloud storage, mainly for testing. On Apify platform this has no effect.",
-            "default": false
+        "output_format": {
+            "title": "Output Format",
+            "type": "string",
+            "description": "Format for output data",
+            "enum": ["json", "jsonl", "csv", "xml", "parquet"],
+            "default": "json"
+        },
+        "filters": {
+            "title": "Product Filters",
+            "type": "object",
+            "description": "Filters to apply to scraped products",
+            "properties": {
+                "min_price": {
+                    "type": "number",
+                    "description": "Minimum price filter"
+                },
+                "max_price": {
+                    "type": "number",
+                    "description": "Maximum price filter"
+                },
+                "currency": {
+                    "type": "string",
+                    "description": "Currency filter (e.g., 'USD', 'EUR')"
+                },
+                "vendors": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Vendor filter - only products from these vendors"
+                },
+                "product_types": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Product type filter"
+                },
+                "tags_any": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Products must have at least one of these tags"
+                },
+                "tags_all": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Products must have all of these tags"
+                },
+                "tags_exclude": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Products must not have any of these tags"
+                },
+                "availability": {
+                    "type": "boolean",
+                    "description": "Product availability filter"
+                },
+                "min_inventory": {
+                    "type": "integer",
+                    "description": "Minimum inventory quantity"
+                },
+                "search_query": {
+                    "type": "string",
+                    "description": "Search query to filter products by title/description"
+                },
+                "handle_pattern": {
+                    "type": "string",
+                    "description": "Regex pattern to match product handles"
+                }
+            }
+        },
+        "extraction": {
+            "title": "Extraction Options",
+            "type": "object",
+            "description": "Options for data extraction",
+            "properties": {
+                "include_custom_fields": {
+                    "type": "boolean",
+                    "description": "Include custom metafields",
+                    "default": false
+                }
+            }
+        },
+        "performance": {
+            "title": "Performance Settings",
+            "type": "object",
+            "description": "Performance optimization settings",
+            "properties": {
+                "enable_http2": {
+                    "type": "boolean",
+                    "description": "Enable HTTP/2",
+                    "default": false
+                },
+                "enable_connection_pooling": {
+                    "type": "boolean",
+                    "description": "Enable connection pooling",
+                    "default": true
+                },
+                "enable_compression": {
+                    "type": "boolean",
+                    "description": "Enable compression",
+                    "default": true
+                },
+                "enable_caching": {
+                    "type": "boolean",
+                    "description": "Enable response caching",
+                    "default": false
+                },
+                "enable_retries": {
+                    "type": "boolean",
+                    "description": "Enable automatic retries",
+                    "default": true
+                },
+                "max_retries": {
+                    "type": "integer",
+                    "description": "Maximum number of retries",
+                    "default": 3,
+                    "minimum": 0,
+                    "maximum": 10
+                },
+                "retry_delay_ms": {
+                    "type": "integer",
+                    "description": "Delay between retries in milliseconds",
+                    "default": 1000,
+                    "minimum": 100,
+                    "maximum": 10000
+                }
+            }
         }
     }
 }
