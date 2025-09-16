@@ -263,6 +263,7 @@ async fn load_input() -> Result<ScraperInput> {
         extraction: schema::ExtractionOptions::default(),
         performance: schema::PerformanceSettings::default(),
         caching: schema::CachingSettings::default(),
+        pagination: schema::PaginationSettings::default(),
     })
 }
 
@@ -333,6 +334,7 @@ async fn load_apify_input() -> Result<ScraperInput> {
         extraction: schema::ExtractionOptions::default(),
         performance: schema::PerformanceSettings::default(),
         caching: schema::CachingSettings::default(),
+        pagination: schema::PaginationSettings::default(),
     };
     
     Ok(input)

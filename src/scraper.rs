@@ -398,12 +398,24 @@ impl ShopifyScraper {
     pub async fn discover_products(&self, domain: &str, max_products: usize) -> Result<Vec<String>> {
         let domain = self.normalize_domain(domain)?;
 
-        // Try to get products from collections or sitemap
-        let urls_to_try = vec![
-            format!("{}/collections/all/products.json", domain),
-            format!("{}/products.json", domain),
-            format!("{}/sitemap_products_1.xml", domain),
-        ];
+        // Build URLs with pagination parameters
+        let limit = self.config.input.pagination.limit;
+        let page = self.config.input.pagination.page;
+        let enable_pagination = self.config.input.pagination.enable_pagination;
+        
+        let urls_to_try = if enable_pagination {
+            vec![
+                format!("{}/collections/all/products.json?limit={}&page={}", domain, limit, page),
+                format!("{}/products.json?limit={}&page={}", domain, limit, page),
+                format!("{}/sitemap_products_1.xml", domain),
+            ]
+        } else {
+            vec![
+                format!("{}/collections/all/products.json?limit={}", domain, limit),
+                format!("{}/products.json?limit={}", domain, limit),
+                format!("{}/sitemap_products_1.xml", domain),
+            ]
+        };
 
         for url in urls_to_try {
             match self.client.get(&url).send().await {
@@ -418,9 +430,9 @@ impl ShopifyScraper {
                             
                             // Determine total pages by checking if we got a full page
                             let mut total_pages = 1;
-                            if first_products.len() == 250 { // Full page, likely more pages exist
-                                info!("First page has 250 products, checking for more pages...");
-                                total_pages = self.discover_total_pages(&domain, &url).await.unwrap_or(1);
+                            if first_products.len() == limit { // Full page, likely more pages exist
+                                info!("First page has {} products, checking for more pages...", limit);
+                                total_pages = self.discover_total_pages(&domain, &url, limit).await.unwrap_or(1);
                             } else {
                                 info!("First page has {} products, likely the only page", first_products.len());
                             }
@@ -429,12 +441,18 @@ impl ShopifyScraper {
                             
                             // Create parallel tasks for all pages
                             let mut page_tasks = Vec::new();
-                            for page in 1..=total_pages {
+                            let max_pages = if self.config.input.pagination.max_pages > 0 {
+                                std::cmp::min(total_pages, self.config.input.pagination.max_pages)
+                            } else {
+                                total_pages
+                            };
+                            
+                            for page_num in 1..=max_pages {
                                 let client = self.client.clone();
                                 let page_url = if url.contains("collections/all") {
-                                    format!("{}/collections/all/products.json?page={}&limit=250", domain, page)
+                                    format!("{}/collections/all/products.json?page={}&limit={}", domain, page_num, limit)
                                 } else {
-                                    format!("{}/products.json?page={}&limit=250", domain, page)
+                                    format!("{}/products.json?page={}&limit={}", domain, page_num, limit)
                                 };
                                 
                                 page_tasks.push(tokio::spawn(async move {
@@ -448,25 +466,25 @@ impl ShopifyScraper {
                                                             .filter_map(|p| p.get("handle").and_then(|h| h.as_str()))
                                                             .map(|s| s.to_string())
                                                             .collect();
-                                                        debug!("Page {} returned {} products", page, handles.len());
+                                                        debug!("Page {} returned {} products", page_num, handles.len());
                                                         Ok(handles)
                                                     } else {
-                                                        debug!("Page {} has no products array", page);
+                                                        debug!("Page {} has no products array", page_num);
                                                         Ok(Vec::new())
                                                     }
                                                 }
                                                 Err(e) => {
-                                                    warn!("Failed to parse JSON for page {}: {}", page, e);
+                                                    warn!("Failed to parse JSON for page {}: {}", page_num, e);
                                                     Err(e)
                                                 }
                                             }
                                         }
                                         Ok(response) => {
-                                            debug!("Page {} returned status: {}", page, response.status());
+                                            debug!("Page {} returned status: {}", page_num, response.status());
                                             Ok(Vec::new()) // Non-200 status
                                         }
                                         Err(e) => {
-                                            warn!("Failed to fetch page {}: {}", page, e);
+                                            warn!("Failed to fetch page {}: {}", page_num, e);
                                             Err(e.into())
                                         }
                                     }
@@ -502,7 +520,7 @@ impl ShopifyScraper {
                                 };
                                 
                                 info!("Discovered {} products from {} (parallel pagination, {} pages)", 
-                                      final_count, domain, total_pages);
+                                      final_count, domain, max_pages);
                                 return Ok(all_handles);
                             }
                         }
@@ -532,16 +550,16 @@ impl ShopifyScraper {
     }
 
     /// Discover total number of pages by sequential checking
-    async fn discover_total_pages(&self, domain: &str, base_url: &str) -> Result<usize> {
+    async fn discover_total_pages(&self, domain: &str, base_url: &str, limit: usize) -> Result<usize> {
         // Sequential approach: keep checking pages until we get an empty response
         let mut page = 2; // Start from page 2 since we already checked page 1
         let mut last_valid_page = 1;
         
         loop {
             let test_url = if base_url.contains("collections/all") {
-                format!("{}/collections/all/products.json?page={}&limit=250", domain, page)
+                format!("{}/collections/all/products.json?page={}&limit={}", domain, page, limit)
             } else {
-                format!("{}/products.json?page={}&limit=250", domain, page)
+                format!("{}/products.json?page={}&limit={}", domain, page, limit)
             };
             
             match self.client.get(&test_url).send().await {

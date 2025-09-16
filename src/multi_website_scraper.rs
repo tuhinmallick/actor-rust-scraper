@@ -304,12 +304,24 @@ impl MultiWebsiteScraper {
     async fn discover_products_from_website(&self, domain: &str, max_products: usize) -> Result<Vec<String>> {
         let domain = self.normalize_domain(domain)?;
         
-        // Try multiple endpoints for product discovery
-        let urls_to_try = vec![
-            format!("{}/collections/all/products.json", domain),
-            format!("{}/products.json", domain),
-            format!("{}/sitemap_products_1.xml", domain),
-        ];
+        // Try multiple endpoints for product discovery with pagination
+        let limit = self.config.input.pagination.limit;
+        let page = self.config.input.pagination.page;
+        let enable_pagination = self.config.input.pagination.enable_pagination;
+        
+        let urls_to_try = if enable_pagination {
+            vec![
+                format!("{}/collections/all/products.json?limit={}&page={}", domain, limit, page),
+                format!("{}/products.json?limit={}&page={}", domain, limit, page),
+                format!("{}/sitemap_products_1.xml", domain),
+            ]
+        } else {
+            vec![
+                format!("{}/collections/all/products.json?limit={}", domain, limit),
+                format!("{}/products.json?limit={}", domain, limit),
+                format!("{}/sitemap_products_1.xml", domain),
+            ]
+        };
 
         for url in urls_to_try {
             if let Some(data) = self.fetch_with_cache(&url).await? {

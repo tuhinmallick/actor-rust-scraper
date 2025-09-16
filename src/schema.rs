@@ -57,6 +57,10 @@ pub struct ScraperInput {
     /// Caching and retry settings
     #[serde(default)]
     pub caching: CachingSettings,
+    
+    /// Pagination settings for products.json endpoint
+    #[serde(default)]
+    pub pagination: PaginationSettings,
 }
 
 /// Product filtering options
@@ -163,6 +167,26 @@ pub struct PerformanceSettings {
     pub max_retries: u32,
 }
 
+/// Pagination settings for products.json endpoint
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PaginationSettings {
+    /// Number of products per page (limit parameter)
+    #[serde(default = "default_page_limit")]
+    pub limit: usize,
+    
+    /// Starting page number (page parameter)
+    #[serde(default = "default_page_number")]
+    pub page: usize,
+    
+    /// Enable pagination for product discovery
+    #[serde(default = "default_true")]
+    pub enable_pagination: bool,
+    
+    /// Maximum number of pages to fetch (0 = unlimited)
+    #[serde(default = "default_max_pages")]
+    pub max_pages: usize,
+}
+
 /// Output format options
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub enum OutputFormat {
@@ -200,6 +224,7 @@ impl Default for ScraperInput {
             extraction: ExtractionOptions::default(),
             performance: PerformanceSettings::default(),
             caching: CachingSettings::default(),
+            pagination: PaginationSettings::default(),
         }
     }
 }
@@ -254,6 +279,17 @@ impl Default for PerformanceSettings {
     }
 }
 
+impl Default for PaginationSettings {
+    fn default() -> Self {
+        Self {
+            limit: 250,
+            page: 1,
+            enable_pagination: true,
+            max_pages: 0,
+        }
+    }
+}
+
 // Default value functions
 fn default_true() -> bool { true }
 fn default_false() -> bool { false }
@@ -265,3 +301,6 @@ fn default_max_retries() -> u32 { 3 }
 fn default_cache_ttl() -> u64 { 3600 }
 fn default_retry_delay() -> u64 { 1000 }
 fn default_rate_limit_delay() -> u64 { 100 }
+fn default_page_limit() -> usize { 250 }
+fn default_page_number() -> usize { 1 }
+fn default_max_pages() -> usize { 0 }
