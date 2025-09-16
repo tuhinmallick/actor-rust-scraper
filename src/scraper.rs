@@ -41,7 +41,9 @@ impl ShopifyScraper {
 
         // Apply performance optimizations
         if input.performance.enable_connection_pooling {
-            client_builder = client_builder.pool_max_idle_per_host(20);
+            client_builder = client_builder
+                .pool_max_idle_per_host(50)
+                .pool_idle_timeout(Duration::from_secs(90));
         }
 
         if input.performance.enable_compression {
