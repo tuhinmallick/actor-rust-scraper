@@ -1,7 +1,7 @@
 pub mod models;
 pub mod scraper;
-pub mod output;
+pub mod schema;
 
 pub use scraper::ShopifyScraper;
-pub use output::{format_output, OutputFormat};
-pub use models::{ShopifyProduct, ProductVariant};
+pub use schema::{ScraperInput, OutputFormat, ProductFilters, ExtractionOptions, PerformanceSettings};
+pub use models::{ShopifyProduct, ProductVariant, ProductImage};

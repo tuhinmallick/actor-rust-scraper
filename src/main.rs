@@ -1,76 +1,89 @@
 mod models;
 mod scraper;
-mod output;
+mod schema;
 
 use anyhow::Result;
-use clap::{Parser, ValueEnum};
 use scraper::ShopifyScraper;
-use output::{format_output, OutputFormat};
-
-/// High-Performance Shopify Product Scraper
-#[derive(Parser)]
-#[command(name = "shopify-scraper")]
-#[command(about = "High-Performance Shopify Product Scraper")]
-#[command(version)]
-struct Cli {
-    /// Shopify store domain (e.g., store.myshopify.com)
-    domain: String,
-    
-    /// Specific product handles to scrape
-    #[arg(short, long, value_name = "HANDLE")]
-    products: Vec<String>,
-    
-    /// Auto-discover products from store
-    #[arg(short, long)]
-    discover: bool,
-    
-    /// Maximum products to scrape
-    #[arg(short, long, default_value = "100")]
-    max_products: usize,
-    
-    /// Output format
-    #[arg(short, long, value_enum, default_value = "json")]
-    output: OutputFormat,
-    
-    /// Max concurrent requests
-    #[arg(short, long, default_value = "100")]
-    concurrent: usize,
-    
-    /// Request timeout in seconds
-    #[arg(short, long, default_value = "10")]
-    timeout: u64,
-}
+use schema::{ScraperInput, OutputFormat};
 
 #[tokio::main]
 async fn main() -> Result<()> {
     // Initialize tracing
     tracing_subscriber::fmt::init();
     
-    let cli = Cli::parse();
+    // Example usage with samapura.store
+    let input = ScraperInput {
+        domain: "samapura.store".to_string(),
+        product_handles: vec![],
+        auto_discover: true,
+        max_products: 50,
+        max_concurrent: 100,
+        timeout_seconds: 30,
+        output_format: OutputFormat::Json,
+        filters: schema::ProductFilters::default(),
+        extraction: schema::ExtractionOptions::default(),
+        performance: schema::PerformanceSettings {
+            enable_http2: false,
+            ..Default::default()
+        },
+    };
+    
+    println!("🚀 Shopify Lightning Scraper");
+    println!("=============================");
+    println!("Domain: {}", input.domain);
+    println!("Max Products: {}", input.max_products);
+    println!("Concurrent Requests: {}", input.max_concurrent);
+    
+    // Create scraper
+    let scraper = ShopifyScraper::new(input.clone())?;
     
     // Determine product handles
-    let product_handles = if !cli.products.is_empty() {
-        cli.products
-    } else if cli.discover {
-        let scraper = ShopifyScraper::new(cli.concurrent, cli.timeout)?;
-        let discovered = scraper.discover_products(&cli.domain, cli.max_products).await?;
+    let product_handles = if !input.product_handles.is_empty() {
+        input.product_handles
+    } else if input.auto_discover {
+        let discovered = scraper.discover_products(&input.domain, input.max_products).await?;
         if discovered.is_empty() {
             eprintln!("No products discovered. Exiting.");
             return Ok(());
         }
+        println!("Discovered {} product handles", discovered.len());
         discovered
     } else {
-        eprintln!("Error: Must specify either --products or --discover");
+        eprintln!("Error: Must specify either product_handles or auto_discover");
         return Ok(());
     };
     
     // Scrape products
-    let scraper = ShopifyScraper::new(cli.concurrent, cli.timeout)?;
-    let products = scraper.scrape_multiple_products(&cli.domain, product_handles).await?;
+    let products = scraper.scrape_multiple_products(&input.domain, product_handles).await?;
     
     if !products.is_empty() {
-        let output = format_output(&products, &cli.output)?;
-        println!("{}", output);
+        match input.output_format {
+            OutputFormat::Json => {
+                let json_output = serde_json::to_string_pretty(&products)?;
+                println!("{}", json_output);
+            }
+            OutputFormat::JsonL => {
+                for product in products {
+                    let json_line = serde_json::to_string(&product)?;
+                    println!("{}", json_line);
+                }
+            }
+            OutputFormat::Csv => {
+                let mut wtr = csv::Writer::from_writer(std::io::stdout());
+                for product in products {
+                    wtr.serialize(product)?;
+                }
+                wtr.flush()?;
+            }
+            OutputFormat::Xml => {
+                // XML output would be implemented here
+                println!("XML output not implemented yet");
+            }
+            OutputFormat::Parquet => {
+                // Parquet output would be implemented here
+                println!("Parquet output not implemented yet");
+            }
+        }
     } else {
         println!("No products found.");
     }
