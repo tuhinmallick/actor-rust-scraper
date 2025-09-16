@@ -1,10 +1,7 @@
 {
-  "domain": "samapura.store",
-  "websites": [
-    "samapura.store",
-    "purelei.com"
-  ],
-  "multi_website_mode": true,
+  "domain": "purelei.com",
+  "websites": [],
+  "multi_website_mode": false,
   "product_handles": [],
   "auto_discover": true,
   "max_products": 50,
