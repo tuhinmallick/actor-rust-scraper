@@ -1,109 +1,187 @@
-<!-- toc start -->
-## Rust Scraper
+# High-Performance Shopify Product Scraper
 
-<!-- toc end -->
-**This is super early version for experimentation. Use at your own risk!**
+A blazingly fast, parallel Shopify product scraper that fetches product data from `/product.json` endpoints and transforms it according to canonical key rules.
 
-Speed of light scraping with Rust programming language. This is meant to be a faster (but less flexible) version of Apify's JavaScript based [Cheerio Scraper](https://apify.com/apify/cheerio-scraper).
+## Features
 
-Rust is one of the fastest programming languages out there. In many cases, it matches the speed of C. Although JavaScript offers huge flexibility and development speed, we can use Rust to significantly speed up the crawling and/or reduce costs. Rust scraper is both faster and requires less memory.
+- ⚡ **Millisecond Performance**: Parallel processing with asyncio for ultra-fast scraping
+- 🔄 **Auto-Discovery**: Automatically discover products from Shopify stores
+- 📊 **Canonical Format**: Transforms data according to strict canonical key rules:
+  - Language: English
+  - Case: camelCase
+  - Specificity: Clear but Concise
+  - Singularity & Plurality: Strict Rule
+- 🌍 **Multi-Language Support**: Handles language-specific fields with suffixing convention
+- 📈 **High Concurrency**: Configurable concurrent requests (default: 100)
+- 🛡️ **Robust Error Handling**: Comprehensive error handling and timeout management
+- 📋 **Multiple Output Formats**: JSON and CSV output support
 
-### Changelog
-You can read about fixes and updates in the detailed [changelog file](https://github.com/metalwarrior665/actor-rust-scraper/blob/master/CHANGELOG.md).
+## Installation
 
-### WARNING!!! Don't DDOS a website!
-Because this scraper is so fast, you can easily take a website down. This matters especially if you scrape **more than few hundred URLs** and use the **async** scraping mode.
-How to prevent that:
-- Set reasonable `max_concurrency` input field. You can still scrape very fast and with tiny memory footprint if you set it below `10`.
-- If you want to set high `max_concurrency`, only scrape large websites that can handle a load of 1000 requests/second and more.
-- Use large pool of proxies so they are not immediately banned.
-
-**If we see you abusing this scraper for attacks on Apify platform, your account can be banned**.
-
-### Why it is faster/cheaper than Cheerio Scraper?
-Rust is statically typed language compiled directly into machine code. Because of this, it can optimize the code into the most efficient structures and algorithms. Of course, it is also job of the programmer to write the code efficiently so we expect further improvements for this scraper.
-
-- HTML parsing is about 3 times faster because of efficient data structures.
-- HTTP requests are also faster.
-- Very efficient async implementation with futures (promises in JS).
-- Can offload work to other CPU cores via system threads, scales to full actor memory (native JS doesn't support user created threads).
-- Much lower memory usage due to efficient data structures.
-
-### Limitations of this actor (some will be solved in the future)
-- This actor only works for scraping pure HTML websites (basically an alternative for [Cheerio Scraper](https://apify.com/apify/cheerio-scraper))
-- You can only provide static list of URLs, it cannot enqueue any more.
-- It doesn't have a page function, only simplified interface (`extract` object) to define what should be scraped.
-- Retries are very simplistic
-- It doesn't have a sophisticated concurrency system. It will grow to `max_concurrency` unless CPU gets overwhelmed.
-
-### Input
-Input is a JSON object with the properties below explained in detail on the [Apify Store page](https://apify.com/lukaskrivka/rust-scraper/input-schema). You can also set it up on Apify platform with a nice UI.
-
-### Data extraction
-You need to provide an [extraction configuration object](https://apify.com/lukaskrivka/rust-scraper/input-schema#extract). This object defines selectors to find on the page, what to extract from those selector and finally names of the fields that the data should be saved as.
-
-`extract` (array) is an array of objects where each object has:
-- `field_name` (string) Defines to which field will the data be assigned in your resulting dataset
-- `selector` (string) CSS selector to find the data to extract
-- `extract_type` (object) What to extract
-    - `type` (string) Can be `Text` or `Attribute`
-    - `content` (string) Provide only when `type` is `Attribute`
-
-Full INPUT example:
+```bash
+pip install -r requirements.txt
 ```
+
+## Quick Start
+
+### Scrape Specific Products
+```bash
+python shopify_scraper.py store.myshopify.com --products product-handle-1 product-handle-2
+```
+
+### Auto-Discover and Scrape All Products
+```bash
+python shopify_scraper.py store.myshopify.com --discover --max-products 50
+```
+
+### High-Performance Scraping
+```bash
+python shopify_scraper.py store.myshopify.com --discover --concurrent 200 --timeout 5
+```
+
+## Usage Examples
+
+### Basic Usage
+```bash
+# Scrape specific products
+python shopify_scraper.py example.myshopify.com --products "awesome-t-shirt" "cool-hoodie"
+
+# Auto-discover products (up to 100)
+python shopify_scraper.py example.myshopify.com --discover
+
+# Limit discovered products
+python shopify_scraper.py example.myshopify.com --discover --max-products 25
+```
+
+### Advanced Usage
+```bash
+# High concurrency for maximum speed
+python shopify_scraper.py example.myshopify.com --discover --concurrent 500
+
+# Custom timeout for slow stores
+python shopify_scraper.py example.myshopify.com --discover --timeout 30
+
+# CSV output format
+python shopify_scraper.py example.myshopify.com --discover --output csv
+```
+
+## Command Line Options
+
+| Option | Short | Description | Default |
+|--------|-------|-------------|---------|
+| `--products` | `-p` | Specific product handles to scrape | None |
+| `--discover` | `-d` | Auto-discover products from store | False |
+| `--max-products` | `-m` | Maximum products to scrape | 100 |
+| `--output` | `-o` | Output format (json/csv) | json |
+| `--concurrent` | `-c` | Max concurrent requests | 100 |
+| `--timeout` | `-t` | Request timeout in seconds | 10 |
+
+## Canonical Data Format
+
+The scraper transforms Shopify product data into a canonical format following these immutable rules:
+
+### Core Fields
+- `id`: Product ID
+- `title`: Product title (English)
+- `description`: Product description (English)
+- `price`: Product price
+- `currency`: Currency code
+- `availability`: Availability status
+- `vendor`: Product vendor
+- `productType`: Product type
+- `tags`: Product tags array
+- `images`: Product images array
+- `variants`: Product variants array
+- `createdAt`: Creation timestamp
+- `updatedAt`: Last update timestamp
+- `handle`: Product handle
+
+### Language-Specific Fields
+Following the suffixing convention:
+- `title_de`: German title
+- `title_fr`: French title
+- `title_es`: Spanish title
+- `description_de`: German description
+- `description_fr`: French description
+- `description_es`: Spanish description
+
+### Variant Structure
+```json
 {
-    "proxy_settings": {
-        "useApifyProxy": true,
-        "apifyProxyGroups": ["SHADER"]
-    },
-    "urls": [
-        { "url": "https://www.amazon.com/dp/B01CYYU8YW" },
-        { "url": "https://www.amazon.com/dp/B01FXMDA2O" },
-        { "url": "https://www.amazon.com/dp/B00UNT0Y2M" }
-    ],
-    "extract": [
-        {
-            "field_name": "title",
-            "selector": "#productTitle",
-            "extract_type": {
-                "type": "Text"
-            }
-        },
-        {
-            "field_name": "customer_reviews",
-            "selector": "#acrCustomerReviewText",
-            "extract_type": {
-                "type": "Text"
-            }
-        },
-        {
-            "field_name": "seller_link",
-            "selector": "#bylineInfo",
-            "extract_type": {
-                "type": "Attribute",
-                "content": "href"
-            }
-        }    
-    ]
+  "id": "variant_id",
+  "title": "variant_title",
+  "price": 29.99,
+  "sku": "SKU123",
+  "inventoryQuantity": 100,
+  "available": true,
+  "weight": 0.5,
+  "weightUnit": "kg"
 }
 ```
 
-Output example in JSON (This depends purely on your `extract` config)
-```
+## Performance Optimization
+
+### Concurrency Settings
+- **Conservative**: `--concurrent 50` (for rate-limited stores)
+- **Balanced**: `--concurrent 100` (default)
+- **Aggressive**: `--concurrent 200-500` (for high-performance needs)
+
+### Timeout Settings
+- **Fast stores**: `--timeout 5`
+- **Standard**: `--timeout 10` (default)
+- **Slow stores**: `--timeout 30`
+
+## Error Handling
+
+The scraper includes comprehensive error handling:
+- HTTP status code handling
+- Timeout management
+- Network error recovery
+- Invalid product handling
+- Rate limiting protection
+
+## Output Examples
+
+### JSON Output
+```json
 [
-    {
-        "seller_link":"/Propack/b/ref=bl_dp_s_web_3039360011?ie=UTF8&node=3039360011&field-lbr_brands_browse-bin=Propack","customer_reviews":"208 customer reviews",
-        "title":"Propack Twist - Tie Gallon Size Storage Bags 100 Bags Pack Of 4"
-    },
-    {
-        "byline_link":"/Ziploc/b/ref=bl_dp_s_web_2581449011?ie=UTF8&node=2581449011&field-lbr_brands_browse-bin=Ziploc","customers":"561 customer reviews",
-        "title":"Ziploc Gallon Slider Storage Bags, 96 Count"
-    },
-    {
-        "byline_link":"/Reynolds/b/ref=bl_dp_s_web_2599601011?ie=UTF8&node=2599601011&field-lbr_brands_browse-bin=Reynolds","customers":"456 customer reviews",
-        "title":"Reynolds Wrap Aluminum Foil (200 Square Foot Roll)"
-    }
+  {
+    "id": "123456789",
+    "title": "Awesome T-Shirt",
+    "description": "A really awesome t-shirt",
+    "price": 29.99,
+    "currency": "USD",
+    "availability": true,
+    "vendor": "Awesome Brand",
+    "productType": "Apparel",
+    "tags": ["clothing", "t-shirt", "casual"],
+    "images": ["https://cdn.shopify.com/image1.jpg"],
+    "variants": [...],
+    "createdAt": "2023-01-01T00:00:00Z",
+    "updatedAt": "2023-01-15T12:00:00Z",
+    "handle": "awesome-t-shirt"
+  }
 ]
 ```
-### Local usage
-You can run this locally if you have Rust installed. You need to build it before running. If you want to use Apify Proxy, don't forget to add your `APIFY_PROXY_PASSWORD` into the environment, otherwise you will get a nasty error.
+
+### CSV Output
+```csv
+id,title,description,price,currency,availability,vendor,productType,tags,images,variants,createdAt,updatedAt,handle
+123456789,"Awesome T-Shirt","A really awesome t-shirt",29.99,USD,true,"Awesome Brand",Apparel,"[""clothing"",""t-shirt"",""casual""]","[""https://cdn.shopify.com/image1.jpg""]","[{...}]","2023-01-01T00:00:00Z","2023-01-15T12:00:00Z","awesome-t-shirt"
+```
+
+## License
+
+MIT License - Feel free to use and modify as needed.
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests if applicable
+5. Submit a pull request
+
+## Support
+
+For issues and questions, please open an issue on the repository.
