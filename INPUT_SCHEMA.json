@@ -2,7 +2,9 @@
   "title": "Shopify Lightning Scraper",
   "type": "object",
   "schemaVersion": 1,
-  "required": ["domain"],
+  "required": [
+    "domain"
+  ],
   "properties": {
     "domain": {
       "title": "Shopify Store Domain",
@@ -38,76 +40,119 @@
       "minimum": 5,
       "maximum": 300
     },
-    "filters": {
-      "title": "Product Filters",
-      "type": "object",
-      "editor": "textarea",
-      "description": "Filters to apply to scraped products (JSON). Example: {\"min_price\":10,\"tags_any\":[\"sale\"]}",
-      "properties": {
-        "min_price": { "type": "number", "editor": "textfield", "description": "Minimum price filter" },
-        "max_price": { "type": "number", "editor": "textfield", "description": "Maximum price filter" },
-        "currency": { "type": "string", "editor": "textfield", "description": "Currency filter (e.g., 'USD', 'EUR')" },
-        "vendors": {
-          "type": "array",
-          "editor": "select",
-          "items": { "type": "string" },
-          "description": "Vendor filter - only products from these vendors"
-        },
-        "product_types": {
-          "type": "array",
-          "editor": "select",
-          "items": { "type": "string" },
-          "description": "Product type filter"
-        },
-        "tags_any": {
-          "type": "array",
-          "editor": "select",
-          "items": { "type": "string" },
-          "description": "Products must have at least one of these tags"
-        },
-        "availability": { "type": "boolean", "editor": "textfield", "description": "Product availability filter" },
-        "search_query": { "type": "string", "editor": "textfield", "description": "Search query to filter products by title/description" }
-      }
+    "min_price": {
+      "title": "Minimum Price",
+      "type": "number",
+      "editor": "number",
+      "description": "Filter products by a minimum price",
+      "group": "filters"
     },
-    "extraction": {
-      "title": "Extraction Options",
-      "type": "object",
-      "editor": "textarea",
-      "description": "Options for data extraction (JSON). Example: {\"include_custom_fields\": true}",
-      "properties": {
-        "include_custom_fields": {
-          "type": "boolean",
-          "editor": "textfield",
-          "description": "Include custom metafields",
-          "default": false
-        },
-        "include_images": {
-          "type": "boolean",
-          "editor": "textfield",
-          "description": "Include product images",
-          "default": true
-        },
-        "include_variants": {
-          "type": "boolean",
-          "editor": "textfield",
-          "description": "Include product variants",
-          "default": true
-        }
-      }
+    "max_price": {
+      "title": "Maximum Price",
+      "type": "number",
+      "editor": "number",
+      "description": "Filter products by a maximum price",
+      "group": "filters"
     },
-    "performance": {
-      "title": "Performance Settings",
-      "type": "object",
-      "editor": "textarea",
-      "description": "Performance optimization settings (JSON).",
-      "properties": {
-        "enable_connection_pooling": { "type": "boolean", "editor": "textfield", "description": "Enable connection pooling", "default": true },
-        "enable_compression": { "type": "boolean", "editor": "textfield", "description": "Enable compression", "default": true },
-        "enable_retries": { "type": "boolean", "editor": "textfield", "description": "Enable automatic retries", "default": true },
-        "max_retries": { "type": "integer", "editor": "number", "description": "Maximum number of retries", "default": 3, "minimum": 0, "maximum": 10 }
-      }
+    "currency": {
+      "title": "Currency",
+      "type": "string",
+      "editor": "textfield",
+      "description": "Currency to filter by (e.g., 'USD', 'EUR')",
+      "group": "filters"
+    },
+    "vendors": {
+      "title": "Filter by Vendors",
+      "type": "array",
+      "editor": "tags",
+      "description": "Only include products from these vendors",
+      "group": "filters"
+    },
+    "product_types": {
+      "title": "Filter by Product Types",
+      "type": "array",
+      "editor": "tags",
+      "description": "Only include products of these types",
+      "group": "filters"
+    },
+    "tags_any": {
+      "title": "Filter by Tags",
+      "type": "array",
+      "editor": "tags",
+      "description": "Products must have at least one of these tags",
+      "group": "filters"
+    },
+    "availability": {
+      "title": "Only Available Products",
+      "type": "boolean",
+      "editor": "checkbox",
+      "description": "If checked, only scrape products that are in stock",
+      "group": "filters"
+    },
+    "search_query": {
+      "title": "Search Query",
+      "type": "string",
+      "editor": "textfield",
+      "description": "Search term to filter products by title/description",
+      "group": "filters"
+    },
+    "include_custom_fields": {
+      "title": "Include Custom Fields",
+      "type": "boolean",
+      "editor": "checkbox",
+      "description": "Include custom metafields in the output",
+      "default": false,
+      "group": "extraction"
+    },
+    "include_images": {
+      "title": "Include Product Images",
+      "type": "boolean",
+      "editor": "checkbox",
+      "description": "Include all product images in the output",
+      "default": true,
+      "group": "extraction"
+    },
+    "include_variants": {
+      "title": "Include Product Variants",
+      "type": "boolean",
+      "editor": "checkbox",
+      "description": "Include all product variants (e.g., size, color)",
+      "default": true,
+      "group": "extraction"
+    },
+    "enable_connection_pooling": {
+      "title": "Enable Connection Pooling",
+      "type": "boolean",
+      "editor": "checkbox",
+      "description": "Enable HTTP connection pooling for better performance",
+      "default": true,
+      "group": "performance"
+    },
+    "enable_compression": {
+      "title": "Enable Compression",
+      "type": "boolean",
+      "editor": "checkbox",
+      "description": "Enable gzip/brotli compression for faster downloads",
+      "default": true,
+      "group": "performance"
+    },
+    "enable_retries": {
+      "title": "Enable Automatic Retries",
+      "type": "boolean",
+      "editor": "checkbox",
+      "description": "Automatically retry failed network requests",
+      "default": true,
+      "group": "performance"
+    },
+    "max_retries": {
+      "title": "Maximum Retries",
+      "type": "integer",
+      "editor": "number",
+      "description": "Maximum number of retries for a failed request",
+      "default": 3,
+      "minimum": 0,
+      "maximum": 10,
+      "group": "performance"
     }
   }
 }
-
-
