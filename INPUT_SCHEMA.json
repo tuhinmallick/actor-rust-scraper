@@ -79,45 +79,6 @@
       "description": "Output format for scraped data",
       "enum": ["Json", "JsonL", "Csv", "Xml", "Parquet"],
       "default": "Json"
-    },
-    "pagination": {
-      "title": "Pagination Settings",
-      "type": "object",
-      "description": "Pagination settings for products.json endpoint",
-      "properties": {
-        "limit": {
-          "title": "Products per Page",
-          "type": "integer",
-          "editor": "number",
-          "description": "Number of products per page (limit parameter)",
-          "minimum": 1,
-          "maximum": 250,
-          "default": 250
-        },
-        "page": {
-          "title": "Starting Page",
-          "type": "integer",
-          "editor": "number",
-          "description": "Starting page number (page parameter)",
-          "minimum": 1,
-          "default": 1
-        },
-        "enable_pagination": {
-          "title": "Enable Pagination",
-          "type": "boolean",
-          "editor": "checkbox",
-          "description": "Enable pagination for product discovery",
-          "default": true
-        },
-        "max_pages": {
-          "title": "Maximum Pages",
-          "type": "integer",
-          "editor": "number",
-          "description": "Maximum number of pages to fetch (0 = unlimited)",
-          "minimum": 0,
-          "default": 0
-        }
-      }
     }
   }
 }
