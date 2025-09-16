@@ -423,15 +423,28 @@ impl ShopifyScraper {
             match self.client.get(&url).send().await {
                 Ok(response) if response.status() == reqwest::StatusCode::OK => {
                     info!("Successfully fetched {}", url);
-                    if url.ends_with(".json") {
+                    info!("URL contains .json: {}", url.contains(".json"));
+                    if url.contains(".json") {
                         // First, discover total number of pages by checking first page
-                        let first_page_data = match response.json::<serde_json::Value>().await {
+                        let response_text = match response.text().await {
+                            Ok(text) => {
+                                info!("Got response text for {}, length: {}", url, text.len());
+                                text
+                            }
+                            Err(e) => {
+                                warn!("Failed to get response text for {}: {}", url, e);
+                                continue;
+                            }
+                        };
+                        
+                        let first_page_data = match serde_json::from_str::<serde_json::Value>(&response_text) {
                             Ok(data) => {
                                 info!("Parsed JSON response for {}", url);
                                 data
                             }
                             Err(e) => {
                                 warn!("Failed to parse JSON for {}: {}", url, e);
+                                warn!("Response text preview: {}", &response_text[..std::cmp::min(200, response_text.len())]);
                                 continue; // Try next URL
                             }
                         };
@@ -536,7 +549,7 @@ impl ShopifyScraper {
                         } else {
                             warn!("No products array found in JSON response for {}", url);
                         }
-                    } else if url.ends_with(".xml") {
+                    } else if url.contains(".xml") {
                         let content = response.text().await?;
                         let handles: Vec<String> = HANDLE_PATTERN
                             .captures_iter(&content)
