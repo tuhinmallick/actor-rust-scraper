@@ -1,3 +1,13 @@
+#### 2025-09-16
+- Upgraded to Rust edition 2024 for latest language features
+- Updated all dependencies to 2025 versions:
+  - tokio: 1.40 (async runtime improvements)
+  - reqwest: 0.12 (better HTTP/3 support)
+  - uuid: 1.10 (performance improvements)
+  - Other dependencies updated for security and performance
+- Updated Docker base image to Rust 1.88-slim
+- Improved build times with Docker layer caching
+
 #### 2021-03-15
 - Updated internals and libraries. The scraper should be even more efficient now.
 

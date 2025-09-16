@@ -133,8 +133,8 @@ let filters = ProductFilters {
     min_inventory: Some(10),
     
     // Date filtering
-    created_after: Some("2023-01-01T00:00:00Z".to_string()),
-    updated_before: Some("2023-12-31T23:59:59Z".to_string()),
+    created_after: Some("2025-01-01T00:00:00Z".to_string()),
+    updated_before: Some("2025-12-31T23:59:59Z".to_string()),
     
     // Search and pattern matching
     search_query: Some("wireless headphones".to_string()),
@@ -299,8 +299,8 @@ The scraper follows a canonical data format with these immutable rules:
       "tax_code": "P0000000"
     }
   ],
-  "created_at": "2023-01-15T10:30:00Z",
-  "updated_at": "2023-12-01T14:22:00Z",
+  "created_at": "2025-01-15T10:30:00Z",
+  "updated_at": "2025-09-01T14:22:00Z",
   "handle": "wireless-bluetooth-headphones",
   "url": "https://store.myshopify.com/products/wireless-bluetooth-headphones",
   "seo_data": {
@@ -376,7 +376,7 @@ This scraper is fully compatible with Apify's platform and can be easily deploye
     "vendors": ["Nike", "Adidas"],
     "product_types": ["Shoes", "Clothing"],
     "min_inventory": 5,
-    "created_after": "2023-01-01T00:00:00Z",
+    "created_after": "2025-01-01T00:00:00Z",
     "search_query": "wireless headphones"
   },
   "extraction": {
@@ -655,10 +655,10 @@ export RUST_LOG=trace
 ### Log Output Example
 
 ```
-2023-12-01T10:30:00Z INFO  shopify_lightning_scraper: Scraping 150 products from samapura.store
-2023-12-01T10:30:01Z DEBUG shopify_lightning_scraper: Cache hit for product-123
-2023-12-01T10:30:02Z WARN  shopify_lightning_scraper: Rate limited for product-456
-2023-12-01T10:30:03Z INFO  shopify_lightning_scraper: Scraped 148 products in 2.3 seconds
+2025-09-16T10:30:00Z INFO  shopify_lightning_scraper: Scraping 150 products from samapura.store
+2025-09-16T10:30:01Z DEBUG shopify_lightning_scraper: Cache hit for product-123
+2025-09-16T10:30:02Z WARN  shopify_lightning_scraper: Rate limited for product-456
+2025-09-16T10:30:03Z INFO  shopify_lightning_scraper: Scraped 148 products in 2.3 seconds
 ```
 
 ## 🚀 Deployment
@@ -826,19 +826,19 @@ For enterprise support, custom features, or consulting:
 
 ## 🎯 Roadmap
 
-### Version 1.1 (Q1 2024)
+### Version 1.1 (Q4 2025)
 - [ ] GraphQL API support
 - [ ] Real-time monitoring dashboard
 - [ ] Advanced analytics integration
 - [ ] Multi-store batch processing
 
-### Version 1.2 (Q2 2024)
+### Version 1.2 (Q1 2026)
 - [ ] Machine learning price prediction
 - [ ] Automated competitor analysis
 - [ ] Custom data transformation rules
 - [ ] Webhook integration
 
-### Version 2.0 (Q3 2024)
+### Version 2.0 (Q2 2026)
 - [ ] Multi-platform support (WooCommerce, Magento)
 - [ ] Advanced caching with Redis
 - [ ] Distributed scraping
