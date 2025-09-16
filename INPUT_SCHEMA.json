@@ -14,7 +14,7 @@
     "max_products": {
       "title": "Maximum Products",
       "type": "integer",
-      "editor": "textfield",
+      "editor": "number",
       "description": "Maximum number of products to scrape",
       "default": 50,
       "minimum": 1,
@@ -23,7 +23,7 @@
     "max_concurrent": {
       "title": "Max Concurrent Requests",
       "type": "integer",
-      "editor": "textfield",
+      "editor": "number",
       "description": "Maximum number of concurrent requests",
       "default": 100,
       "minimum": 1,
@@ -32,7 +32,7 @@
     "timeout_seconds": {
       "title": "Request Timeout (seconds)",
       "type": "integer",
-      "editor": "textfield",
+      "editor": "number",
       "description": "Timeout for each HTTP request in seconds",
       "default": 30,
       "minimum": 5,
@@ -112,7 +112,7 @@
         "enable_connection_pooling": { "type": "boolean", "editor": "textfield", "description": "Enable connection pooling", "default": true },
         "enable_compression": { "type": "boolean", "editor": "textfield", "description": "Enable compression", "default": true },
         "enable_retries": { "type": "boolean", "editor": "textfield", "description": "Enable automatic retries", "default": true },
-        "max_retries": { "type": "integer", "editor": "textfield", "description": "Maximum number of retries", "default": 3, "minimum": 0, "maximum": 10 }
+        "max_retries": { "type": "integer", "editor": "number", "description": "Maximum number of retries", "default": 3, "minimum": 0, "maximum": 10 }
       }
     }
   }
