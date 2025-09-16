@@ -38,7 +38,7 @@ impl Actor {
 
         let is_default = dataset_name_or_id.is_none();
 
-        println!("is_default {}", is_default);
+        // println!("is_default {}", is_default);
 
         let dataset;
         if is_on_apify() || force_cloud {

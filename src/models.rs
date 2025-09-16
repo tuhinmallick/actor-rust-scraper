@@ -159,6 +159,7 @@ pub struct ShopifyApiResponse {
 }
 
 #[derive(Debug, Clone, Deserialize)]
+#[allow(dead_code)]
 pub struct RawShopifyProduct {
     pub id: u64,
     pub title: String,
@@ -209,6 +210,7 @@ pub struct RawProductImage {
 }
 
 #[derive(Debug, Clone, Deserialize)]
+#[allow(dead_code)]
 pub struct RawProductOption {
     pub id: u64,
     pub name: String,
@@ -216,6 +218,7 @@ pub struct RawProductOption {
 }
 
 #[derive(Debug, Clone, Deserialize)]
+#[allow(dead_code)]
 pub struct RawMetafield {
     pub id: u64,
     pub namespace: String,

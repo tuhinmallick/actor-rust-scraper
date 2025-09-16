@@ -3,8 +3,16 @@ use serde::{Deserialize, Serialize};
 /// Apify-compatible input schema for Shopify Lightning Scraper
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ScraperInput {
-    /// Shopify store domain (required)
+    /// Shopify store domain (required for single website mode)
     pub domain: String,
+    
+    /// Multiple websites to scrape (for multi-website mode)
+    #[serde(default)]
+    pub websites: Vec<String>,
+    
+    /// Enable multi-website mode
+    #[serde(default = "default_false")]
+    pub multi_website_mode: bool,
     
     /// Specific product handles to scrape
     #[serde(default)]
@@ -14,13 +22,17 @@ pub struct ScraperInput {
     #[serde(default = "default_true")]
     pub auto_discover: bool,
     
-    /// Maximum products to scrape
+    /// Maximum products to scrape per website
     #[serde(default = "default_max_products")]
     pub max_products: usize,
     
-    /// Maximum concurrent requests
+    /// Maximum concurrent requests per domain
     #[serde(default = "default_concurrent")]
     pub max_concurrent: usize,
+    
+    /// Global maximum concurrent requests across all websites
+    #[serde(default = "default_global_concurrent")]
+    pub global_max_concurrent: usize,
     
     /// Request timeout in seconds
     #[serde(default = "default_timeout")]
@@ -41,6 +53,10 @@ pub struct ScraperInput {
     /// Performance optimization settings
     #[serde(default)]
     pub performance: PerformanceSettings,
+    
+    /// Caching and retry settings
+    #[serde(default)]
+    pub caching: CachingSettings,
 }
 
 /// Product filtering options
@@ -95,6 +111,38 @@ pub struct ExtractionOptions {
     pub include_custom_fields: bool,
 }
 
+/// Caching and retry settings for optimal performance
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CachingSettings {
+    /// Enable response caching
+    #[serde(default = "default_true")]
+    pub enable_response_caching: bool,
+    
+    /// Enable failure caching to avoid immediate retries
+    #[serde(default = "default_true")]
+    pub enable_failure_caching: bool,
+    
+    /// Cache TTL in seconds
+    #[serde(default = "default_cache_ttl")]
+    pub cache_ttl_seconds: u64,
+    
+    /// Maximum retry attempts
+    #[serde(default = "default_max_retries")]
+    pub max_retries: u32,
+    
+    /// Base retry delay in milliseconds
+    #[serde(default = "default_retry_delay")]
+    pub retry_delay_ms: u64,
+    
+    /// Rate limit delay per domain in milliseconds
+    #[serde(default = "default_rate_limit_delay")]
+    pub rate_limit_per_domain_ms: u64,
+    
+    /// Enable exponential backoff for retries
+    #[serde(default = "default_true")]
+    pub enable_exponential_backoff: bool,
+}
+
 /// Performance optimization settings
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PerformanceSettings {
@@ -139,15 +187,19 @@ impl Default for ScraperInput {
     fn default() -> Self {
         Self {
             domain: String::new(),
+            websites: Vec::new(),
+            multi_website_mode: false,
             product_handles: Vec::new(),
             auto_discover: true,
             max_products: 1000,
             max_concurrent: 100,
+            global_max_concurrent: 200,
             timeout_seconds: 30,
             output_format: OutputFormat::Json,
             filters: ProductFilters::default(),
             extraction: ExtractionOptions::default(),
             performance: PerformanceSettings::default(),
+            caching: CachingSettings::default(),
         }
     }
 }
@@ -177,6 +229,20 @@ impl Default for ExtractionOptions {
     }
 }
 
+impl Default for CachingSettings {
+    fn default() -> Self {
+        Self {
+            enable_response_caching: true,
+            enable_failure_caching: true,
+            cache_ttl_seconds: 3600, // 1 hour
+            max_retries: 3,
+            retry_delay_ms: 1000,
+            rate_limit_per_domain_ms: 100,
+            enable_exponential_backoff: true,
+        }
+    }
+}
+
 impl Default for PerformanceSettings {
     fn default() -> Self {
         Self {
@@ -193,5 +259,9 @@ fn default_true() -> bool { true }
 fn default_false() -> bool { false }
 fn default_max_products() -> usize { 1000 }
 fn default_concurrent() -> usize { 100 }
+fn default_global_concurrent() -> usize { 200 }
 fn default_timeout() -> u64 { 30 }
 fn default_max_retries() -> u32 { 3 }
+fn default_cache_ttl() -> u64 { 3600 }
+fn default_retry_delay() -> u64 { 1000 }
+fn default_rate_limit_delay() -> u64 { 100 }

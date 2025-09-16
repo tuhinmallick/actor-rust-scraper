@@ -167,28 +167,28 @@ impl BasicCrawler {
             // println!("Took new request: {:?}", req);
                         
             scope.spawn(async {
-                if self.debug_log {
-                    println!("Spawning extraction for {}", req.url);
-                }
+                // if self.debug_log {
+                //     println!("Spawning extraction for {}", req.url);
+                // }
 
                 let extract_data_result = BasicCrawler::handle_request_function_default(&req, &self).await;
 
-                if self.debug_log {
-                    println!("Extraction finished for {}", req.url);
-                }
+                // if self.debug_log {
+                //     println!("Extraction finished for {}", req.url);
+                // }
 
-                // Log concurrency
-                if self.debug_log {
-                    let locked_state = self.request_list.state.lock();
-                    println!("In progress count:{}", locked_state.in_progress.len());
-                }
+                // Log concurrency (disabled result logging)
+                // if self.debug_log {
+                //     let locked_state = self.request_list.state.lock();
+                //     println!("In progress count:{}", locked_state.in_progress.len());
+                // }
 
                 match extract_data_result {
                     Ok(()) => {
-                        if self.debug_log {
-                            println!("SUCCESS: Retry count: {}, URL: {}",
-                            req.retry_count, req.url); 
-                        }
+                        // if self.debug_log {
+                        //     println!("SUCCESS: Retry count: {}, URL: {}",
+                        //     req.retry_count, req.url); 
+                        // }
                         self.request_list.mark_request_handled(req);
                     },
                     Err(ref e) if req.retry_count < self.max_request_retries => {
@@ -212,16 +212,16 @@ impl BasicCrawler {
         let locked_vec = self.push_data_buffer.lock().await;
 
         // TODO: We should not need to clone here
-        println!("Remaing Push data buffer length before last push:{}", locked_vec.len());
+        // println!("Remaing Push data buffer length before last push:{}", locked_vec.len());
         push_data(locked_vec.clone(), &self.client, self.force_cloud).await.unwrap(); 
     } 
 
     pub async fn handle_request_function_default (req: &Request, basic_crawler: &BasicCrawler)
         -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         let url = &req.url;
-        if basic_crawler.debug_log {
-            println!("Started extraction --- {}", url);
-        }
+        // if basic_crawler.debug_log {
+        //     println!("Started extraction --- {}", url);
+        // }
     
         // Random fail for testing errors
         /*
@@ -286,11 +286,11 @@ impl BasicCrawler {
             let mut locked_vec = basic_crawler.push_data_buffer.lock().await;
             locked_vec.push(value);
             let vec_len = locked_vec.len();
-            if basic_crawler.debug_log {
-                println!("Push data buffer length:{}", vec_len);
-            }
+            // if basic_crawler.debug_log {
+            //     println!("Push data buffer length:{}", vec_len);
+            // }
             if vec_len >= locked_vec.capacity() { // Capacity should never grow over original push_data_size
-                println!("Flushing data buffer --- length: {}", locked_vec.len());
+                // println!("Flushing data buffer --- length: {}", locked_vec.len());
                 if basic_crawler.force_cloud {
                     basic_crawler.actor.client.put_items(&apify_client::client::IdOrName::Id("qdFyJscHebXJqilLu".to_string()), &*locked_vec)
                         .send().await?;
@@ -300,24 +300,24 @@ impl BasicCrawler {
                 // TODO: Fix actor implementation
                 // actor.push_data(&locked_vec).await?;
                 locked_vec.truncate(0);
-                println!("Flushed data buffer --- length: {}", locked_vec.len());
+                // println!("Flushed data buffer --- length: {}", locked_vec.len());
             }
         }
         
         let push_time = now.elapsed().as_millis();
         
-        if basic_crawler.debug_log {
-            println!(
-                "SUCCESS({}/{}) - {} - timings (in ms) - request: {}, parse: {}, extract: {}, push: {}",
-                map_size,
-                basic_crawler.extract.len(),
-                url,
-                request_time,
-                parse_time,
-                extract_time,
-                push_time
-            );
-        }
+        // if basic_crawler.debug_log {
+        //     println!(
+        //         "SUCCESS({}/{}) - {} - timings (in ms) - request: {}, parse: {}, extract: {}, push: {}",
+        //         map_size,
+        //         basic_crawler.extract.len(),
+        //         url,
+        //         request_time,
+        //         parse_time,
+        //         extract_time,
+        //         push_time
+        //     );
+        // }
         Ok(())
     }
 }

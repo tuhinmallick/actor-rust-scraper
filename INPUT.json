@@ -1,22 +1,38 @@
 {
   "domain": "samapura.store",
+  "websites": [
+    "samapura.store",
+    "purelei.com"
+  ],
+  "multi_website_mode": true,
   "product_handles": [],
   "auto_discover": true,
-  "max_products": 10,
-  "max_concurrent": 50,
-  "timeout_seconds": 30,
-  "output_format": "json",
+  "max_products": 50,
+  "max_concurrent": 10,
+  "global_max_concurrent": 20,
+  "timeout_seconds": 15,
+  "output_format": "Json",
   "filters": {},
   "extraction": {
+    "include_images": true,
+    "include_variants": true,
     "include_custom_fields": false
   },
   "performance": {
-    "enable_http2": false,
     "enable_connection_pooling": true,
     "enable_compression": true,
-    "enable_caching": false,
+    "enable_caching": true,
     "enable_retries": true,
     "max_retries": 3,
     "retry_delay_ms": 1000
+  },
+  "caching": {
+    "enable_response_caching": true,
+    "enable_failure_caching": true,
+    "cache_ttl_seconds": 3600,
+    "max_retries": 3,
+    "retry_delay_ms": 2000,
+    "rate_limit_per_domain_ms": 500,
+    "enable_exponential_backoff": true
   }
 }

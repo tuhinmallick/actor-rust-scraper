@@ -40,7 +40,7 @@ pub async fn push_data (data: Vec<Value>, client: &reqwest::Client, force_cloud:
 
 pub async fn get_value (key: &str) -> Result<Input, Box<dyn std::error::Error + Send + Sync>> {
     let is_on_apify = get_is_on_apify();
-    println!("Is on Apify? -> {}", is_on_apify);
+    // println!("Is on Apify? -> {}", is_on_apify);
     let json = if is_on_apify {
         let default_kv = env::var("APIFY_DEFAULT_KEY_VALUE_STORE_ID")?;
         // println!("Default KV -> {}", default_kv);
