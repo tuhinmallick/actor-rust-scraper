@@ -1,178 +1,142 @@
 {
-    "title": "Shopify Lightning Scraper",
-    "type": "object",
-    "schemaVersion": 1,
-    "required": ["domain"],
-    "properties": {
-        "domain": {
-            "title": "Shopify Store Domain",
-            "type": "string",
-            "description": "The domain of the Shopify store to scrape (e.g., 'example.myshopify.com' or 'example.com')",
-            "prefill": "samapura.store"
+  "title": "Shopify Lightning Scraper",
+  "type": "object",
+  "schemaVersion": 1,
+  "required": ["domain"],
+  "properties": {
+    "domain": {
+      "title": "Shopify Store Domain",
+      "type": "string",
+      "editor": "text",
+      "description": "The domain of the Shopify store to scrape (e.g., 'example.myshopify.com' or 'example.com')",
+      "prefill": "samapura.store"
+    },
+    "product_handles": {
+      "title": "Product Handles",
+      "type": "array",
+      "editor": "array",
+      "description": "Specific product handles to scrape. If empty, auto-discovery will be used.",
+      "items": {
+        "type": "string",
+        "editor": "text"
+      },
+      "prefill": []
+    },
+    "auto_discover": {
+      "title": "Auto Discover Products",
+      "type": "boolean",
+      "editor": "checkbox",
+      "description": "Automatically discover products from the store. If false, product_handles must be provided.",
+      "default": true
+    },
+    "max_products": {
+      "title": "Maximum Products",
+      "type": "integer",
+      "editor": "number",
+      "description": "Maximum number of products to scrape",
+      "default": 50,
+      "minimum": 1,
+      "maximum": 1000
+    },
+    "max_concurrent": {
+      "title": "Max Concurrent Requests",
+      "type": "integer",
+      "editor": "number",
+      "description": "Maximum number of concurrent requests",
+      "default": 100,
+      "minimum": 1,
+      "maximum": 500
+    },
+    "timeout_seconds": {
+      "title": "Request Timeout (seconds)",
+      "type": "integer",
+      "editor": "number",
+      "description": "Timeout for each HTTP request in seconds",
+      "default": 30,
+      "minimum": 5,
+      "maximum": 300
+    },
+    "output_format": {
+      "title": "Output Format",
+      "type": "string",
+      "editor": "select",
+      "description": "Format for output data",
+      "enum": ["json", "jsonl", "csv", "xml", "parquet"],
+      "default": "json"
+    },
+    "filters": {
+      "title": "Product Filters",
+      "type": "object",
+      "editor": "json",
+      "description": "Filters to apply to scraped products",
+      "properties": {
+        "min_price": { "type": "number", "editor": "number", "description": "Minimum price filter" },
+        "max_price": { "type": "number", "editor": "number", "description": "Maximum price filter" },
+        "currency": { "type": "string", "editor": "text", "description": "Currency filter (e.g., 'USD', 'EUR')" },
+        "vendors": {
+          "type": "array",
+          "editor": "array",
+          "items": { "type": "string", "editor": "text" },
+          "description": "Vendor filter - only products from these vendors"
         },
-        "product_handles": {
-            "title": "Product Handles",
-            "type": "array",
-            "description": "Specific product handles to scrape. If empty, auto-discovery will be used.",
-            "items": {
-                "type": "string"
-            },
-            "prefill": []
+        "product_types": {
+          "type": "array",
+          "editor": "array",
+          "items": { "type": "string", "editor": "text" },
+          "description": "Product type filter"
         },
-        "auto_discover": {
-            "title": "Auto Discover Products",
-            "type": "boolean",
-            "description": "Automatically discover products from the store. If false, product_handles must be provided.",
-            "default": true
+        "tags_any": {
+          "type": "array",
+          "editor": "array",
+          "items": { "type": "string", "editor": "text" },
+          "description": "Products must have at least one of these tags"
         },
-        "max_products": {
-            "title": "Maximum Products",
-            "type": "integer",
-            "description": "Maximum number of products to scrape",
-            "default": 50,
-            "minimum": 1,
-            "maximum": 1000
+        "tags_all": {
+          "type": "array",
+          "editor": "array",
+          "items": { "type": "string", "editor": "text" },
+          "description": "Products must have all of these tags"
         },
-        "max_concurrent": {
-            "title": "Max Concurrent Requests",
-            "type": "integer",
-            "description": "Maximum number of concurrent requests",
-            "default": 100,
-            "minimum": 1,
-            "maximum": 500
+        "tags_exclude": {
+          "type": "array",
+          "editor": "array",
+          "items": { "type": "string", "editor": "text" },
+          "description": "Products must not have any of these tags"
         },
-        "timeout_seconds": {
-            "title": "Request Timeout (seconds)",
-            "type": "integer",
-            "description": "Timeout for each HTTP request in seconds",
-            "default": 30,
-            "minimum": 5,
-            "maximum": 300
-        },
-        "output_format": {
-            "title": "Output Format",
-            "type": "string",
-            "description": "Format for output data",
-            "enum": ["json", "jsonl", "csv", "xml", "parquet"],
-            "default": "json"
-        },
-        "filters": {
-            "title": "Product Filters",
-            "type": "object",
-            "description": "Filters to apply to scraped products",
-            "properties": {
-                "min_price": {
-                    "type": "number",
-                    "description": "Minimum price filter"
-                },
-                "max_price": {
-                    "type": "number",
-                    "description": "Maximum price filter"
-                },
-                "currency": {
-                    "type": "string",
-                    "description": "Currency filter (e.g., 'USD', 'EUR')"
-                },
-                "vendors": {
-                    "type": "array",
-                    "items": {"type": "string"},
-                    "description": "Vendor filter - only products from these vendors"
-                },
-                "product_types": {
-                    "type": "array",
-                    "items": {"type": "string"},
-                    "description": "Product type filter"
-                },
-                "tags_any": {
-                    "type": "array",
-                    "items": {"type": "string"},
-                    "description": "Products must have at least one of these tags"
-                },
-                "tags_all": {
-                    "type": "array",
-                    "items": {"type": "string"},
-                    "description": "Products must have all of these tags"
-                },
-                "tags_exclude": {
-                    "type": "array",
-                    "items": {"type": "string"},
-                    "description": "Products must not have any of these tags"
-                },
-                "availability": {
-                    "type": "boolean",
-                    "description": "Product availability filter"
-                },
-                "min_inventory": {
-                    "type": "integer",
-                    "description": "Minimum inventory quantity"
-                },
-                "search_query": {
-                    "type": "string",
-                    "description": "Search query to filter products by title/description"
-                },
-                "handle_pattern": {
-                    "type": "string",
-                    "description": "Regex pattern to match product handles"
-                }
-            }
-        },
-        "extraction": {
-            "title": "Extraction Options",
-            "type": "object",
-            "description": "Options for data extraction",
-            "properties": {
-                "include_custom_fields": {
-                    "type": "boolean",
-                    "description": "Include custom metafields",
-                    "default": false
-                }
-            }
-        },
-        "performance": {
-            "title": "Performance Settings",
-            "type": "object",
-            "description": "Performance optimization settings",
-            "properties": {
-                "enable_http2": {
-                    "type": "boolean",
-                    "description": "Enable HTTP/2",
-                    "default": false
-                },
-                "enable_connection_pooling": {
-                    "type": "boolean",
-                    "description": "Enable connection pooling",
-                    "default": true
-                },
-                "enable_compression": {
-                    "type": "boolean",
-                    "description": "Enable compression",
-                    "default": true
-                },
-                "enable_caching": {
-                    "type": "boolean",
-                    "description": "Enable response caching",
-                    "default": false
-                },
-                "enable_retries": {
-                    "type": "boolean",
-                    "description": "Enable automatic retries",
-                    "default": true
-                },
-                "max_retries": {
-                    "type": "integer",
-                    "description": "Maximum number of retries",
-                    "default": 3,
-                    "minimum": 0,
-                    "maximum": 10
-                },
-                "retry_delay_ms": {
-                    "type": "integer",
-                    "description": "Delay between retries in milliseconds",
-                    "default": 1000,
-                    "minimum": 100,
-                    "maximum": 10000
-                }
-            }
+        "availability": { "type": "boolean", "editor": "checkbox", "description": "Product availability filter" },
+        "min_inventory": { "type": "integer", "editor": "number", "description": "Minimum inventory quantity" },
+        "search_query": { "type": "string", "editor": "text", "description": "Search query to filter products by title/description" },
+        "handle_pattern": { "type": "string", "editor": "text", "description": "Regex pattern to match product handles" }
+      }
+    },
+    "extraction": {
+      "title": "Extraction Options",
+      "type": "object",
+      "editor": "json",
+      "description": "Options for data extraction",
+      "properties": {
+        "include_custom_fields": {
+          "type": "boolean",
+          "editor": "checkbox",
+          "description": "Include custom metafields",
+          "default": false
         }
+      }
+    },
+    "performance": {
+      "title": "Performance Settings",
+      "type": "object",
+      "editor": "json",
+      "description": "Performance optimization settings",
+      "properties": {
+        "enable_http2": { "type": "boolean", "editor": "checkbox", "description": "Enable HTTP/2", "default": false },
+        "enable_connection_pooling": { "type": "boolean", "editor": "checkbox", "description": "Enable connection pooling", "default": true },
+        "enable_compression": { "type": "boolean", "editor": "checkbox", "description": "Enable compression", "default": true },
+        "enable_caching": { "type": "boolean", "editor": "checkbox", "description": "Enable response caching", "default": false },
+        "enable_retries": { "type": "boolean", "editor": "checkbox", "description": "Enable automatic retries", "default": true },
+        "max_retries": { "type": "integer", "editor": "number", "description": "Maximum number of retries", "default": 3, "minimum": 0, "maximum": 10 },
+        "retry_delay_ms": { "type": "integer", "editor": "number", "description": "Delay between retries in milliseconds", "default": 1000, "minimum": 100, "maximum": 10000 }
+      }
     }
+  }
 }
