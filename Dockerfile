@@ -1,4 +1,4 @@
-FROM rust:1.75-slim
+FROM rust:1.88-slim
 
 # Install required dependencies for building
 RUN apt-get update && apt-get install -y \
