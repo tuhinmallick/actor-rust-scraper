@@ -5,8 +5,9 @@ use futures::future::join_all;
 use reqwest::Client;
 use regex::Regex;
 use std::sync::Arc;
-use std::time::Duration;
-use tokio::sync::Semaphore;
+use std::time::{Duration, Instant};
+use std::collections::HashMap;
+use tokio::sync::{Semaphore, RwLock};
 use tracing::{error, info, warn, debug};
 use url::Url;
 use once_cell::sync::Lazy;
@@ -20,6 +21,7 @@ pub struct ShopifyScraper {
     semaphore: Arc<Semaphore>,
     timeout: Duration,
     config: ScraperConfig,
+    domain_limits: Arc<RwLock<HashMap<String, Instant>>>,
 }
 
 impl ShopifyScraper {
@@ -28,7 +30,7 @@ impl ShopifyScraper {
         let config = ScraperConfig {
             input: input.clone(),
             user_agent: "ShopifyLightningScraper/1.0 (Rust)".to_string(),
-            rate_limit_delay: 100, // ms
+            rate_limit_delay: input.caching.rate_limit_per_domain_ms, // Use input setting
             max_redirects: 5,
         };
 
@@ -54,7 +56,20 @@ impl ShopifyScraper {
             semaphore,
             timeout: Duration::from_secs(input.timeout_seconds),
             config,
+            domain_limits: Arc::new(RwLock::new(HashMap::new())),
         })
+    }
+
+    /// Check if we should rate limit requests to a domain
+    async fn should_rate_limit(&self, domain: &str) -> bool {
+        let mut limits = self.domain_limits.write().await;
+        if let Some(last_request) = limits.get(domain) {
+            if last_request.elapsed() < Duration::from_millis(self.config.rate_limit_delay) {
+                return true;
+            }
+        }
+        limits.insert(domain.to_string(), Instant::now());
+        false
     }
 
     /// Normalize domain to ensure proper format
@@ -142,6 +157,11 @@ impl ShopifyScraper {
     /// Fetch product data from Shopify product.json endpoint with retries
     async fn fetch_product_data(&self, domain: &str, product_handle: &str) -> Result<Option<RawShopifyProduct>> {
         let _permit = self.semaphore.acquire().await?;
+        
+        // Rate limiting per domain
+        if self.should_rate_limit(domain).await {
+            tokio::time::sleep(Duration::from_millis(self.config.rate_limit_delay)).await;
+        }
         
         let url = format!("{}/products/{}.json", domain, product_handle);
 
@@ -399,8 +419,10 @@ impl ShopifyScraper {
                             // Determine total pages by checking if we got a full page
                             let mut total_pages = 1;
                             if first_products.len() == 250 { // Full page, likely more pages exist
-                                // Estimate total pages by trying a high page number
+                                info!("First page has 250 products, checking for more pages...");
                                 total_pages = self.discover_total_pages(&domain, &url).await.unwrap_or(1);
+                            } else {
+                                info!("First page has {} products, likely the only page", first_products.len());
                             }
                             
                             info!("Discovered {} total pages for {}", total_pages, domain);
@@ -426,16 +448,27 @@ impl ShopifyScraper {
                                                             .filter_map(|p| p.get("handle").and_then(|h| h.as_str()))
                                                             .map(|s| s.to_string())
                                                             .collect();
+                                                        debug!("Page {} returned {} products", page, handles.len());
                                                         Ok(handles)
                                                     } else {
+                                                        debug!("Page {} has no products array", page);
                                                         Ok(Vec::new())
                                                     }
                                                 }
-                                                Err(e) => Err(e),
+                                                Err(e) => {
+                                                    warn!("Failed to parse JSON for page {}: {}", page, e);
+                                                    Err(e)
+                                                }
                                             }
                                         }
-                                        Ok(_) => Ok(Vec::new()), // Empty page
-                                        Err(e) => Err(e.into()),
+                                        Ok(response) => {
+                                            debug!("Page {} returned status: {}", page, response.status());
+                                            Ok(Vec::new()) // Non-200 status
+                                        }
+                                        Err(e) => {
+                                            warn!("Failed to fetch page {}: {}", page, e);
+                                            Err(e.into())
+                                        }
                                     }
                                 }));
                             }
@@ -498,19 +531,17 @@ impl ShopifyScraper {
         Ok(vec![])
     }
 
-    /// Discover total number of pages by binary search
+    /// Discover total number of pages by sequential checking
     async fn discover_total_pages(&self, domain: &str, base_url: &str) -> Result<usize> {
-        // Binary search to find the last page with products
-        let mut low = 1;
-        let mut high = 1000; // Start with a reasonable upper bound
+        // Sequential approach: keep checking pages until we get an empty response
+        let mut page = 2; // Start from page 2 since we already checked page 1
         let mut last_valid_page = 1;
         
-        while low <= high {
-            let mid = (low + high) / 2;
+        loop {
             let test_url = if base_url.contains("collections/all") {
-                format!("{}/collections/all/products.json?page={}&limit=250", domain, mid)
+                format!("{}/collections/all/products.json?page={}&limit=250", domain, page)
             } else {
-                format!("{}/products.json?page={}&limit=250", domain, mid)
+                format!("{}/products.json?page={}&limit=250", domain, page)
             };
             
             match self.client.get(&test_url).send().await {
@@ -518,30 +549,43 @@ impl ShopifyScraper {
                     match response.json::<serde_json::Value>().await {
                         Ok(data) => {
                             if let Some(products) = data.get("products").and_then(|p| p.as_array()) {
-                                if !products.is_empty() {
-                                    last_valid_page = mid;
-                                    low = mid + 1;
+                                if products.is_empty() {
+                                    // Empty page means we've reached the end
+                                    break;
                                 } else {
-                                    high = mid - 1;
+                                    last_valid_page = page;
+                                    page += 1;
+                                    
+                                    // Safety check to prevent infinite loops
+                                    if page > 1000 {
+                                        warn!("Reached maximum page limit (1000), stopping pagination");
+                                        break;
+                                    }
                                 }
                             } else {
-                                high = mid - 1;
+                                // No products array means we've reached the end
+                                break;
                             }
                         }
-                        Err(_) => {
-                            high = mid - 1;
+                        Err(e) => {
+                            warn!("Failed to parse JSON for page {}: {}", page, e);
+                            break;
                         }
                     }
                 }
-                Ok(_) => {
-                    high = mid - 1;
+                Ok(response) => {
+                    // Non-200 status means we've reached the end
+                    debug!("Page {} returned status: {}", page, response.status());
+                    break;
                 }
-                Err(_) => {
-                    high = mid - 1;
+                Err(e) => {
+                    warn!("Failed to fetch page {}: {}", page, e);
+                    break;
                 }
             }
         }
         
+        info!("Found {} total pages for {}", last_valid_page, domain);
         Ok(last_valid_page)
     }
 }
@@ -553,6 +597,7 @@ impl Clone for ShopifyScraper {
             semaphore: self.semaphore.clone(),
             timeout: self.timeout,
             config: self.config.clone(),
+            domain_limits: self.domain_limits.clone(),
         }
     }
 }

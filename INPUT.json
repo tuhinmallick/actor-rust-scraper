@@ -5,7 +5,7 @@
   "product_handles": [],
   "auto_discover": true,
   "max_products": 0,
-  "max_concurrent": 10,
+  "max_concurrent": 2,
   "global_max_concurrent": 20,
   "timeout_seconds": 15,
   "output_format": "Json",
@@ -29,7 +29,7 @@
     "cache_ttl_seconds": 3600,
     "max_retries": 3,
     "retry_delay_ms": 2000,
-    "rate_limit_per_domain_ms": 500,
+    "rate_limit_per_domain_ms": 1000,
     "enable_exponential_backoff": true
   }
 }
