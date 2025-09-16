@@ -7,32 +7,29 @@
     "domain": {
       "title": "Shopify Store Domain",
       "type": "string",
-      "editor": "text",
+      "editor": "textfield",
       "description": "The domain of the Shopify store to scrape (e.g., 'example.myshopify.com' or 'example.com')",
       "prefill": "samapura.store"
     },
     "product_handles": {
       "title": "Product Handles",
       "type": "array",
-      "editor": "array",
-      "description": "Specific product handles to scrape. If empty, auto-discovery will be used.",
-      "items": {
-        "type": "string",
-        "editor": "text"
-      },
+      "editor": "textarea",
+      "description": "Specific product handles to scrape. One per line. If empty, auto-discovery will be used.",
+      "items": { "type": "string" },
       "prefill": []
     },
     "auto_discover": {
       "title": "Auto Discover Products",
       "type": "boolean",
-      "editor": "checkbox",
+      "editor": "textfield",
       "description": "Automatically discover products from the store. If false, product_handles must be provided.",
       "default": true
     },
     "max_products": {
       "title": "Maximum Products",
       "type": "integer",
-      "editor": "number",
+      "editor": "textfield",
       "description": "Maximum number of products to scrape",
       "default": 50,
       "minimum": 1,
@@ -41,7 +38,7 @@
     "max_concurrent": {
       "title": "Max Concurrent Requests",
       "type": "integer",
-      "editor": "number",
+      "editor": "textfield",
       "description": "Maximum number of concurrent requests",
       "default": 100,
       "minimum": 1,
@@ -50,7 +47,7 @@
     "timeout_seconds": {
       "title": "Request Timeout (seconds)",
       "type": "integer",
-      "editor": "number",
+      "editor": "textfield",
       "description": "Timeout for each HTTP request in seconds",
       "default": 30,
       "minimum": 5,
@@ -59,65 +56,65 @@
     "output_format": {
       "title": "Output Format",
       "type": "string",
-      "editor": "select",
-      "description": "Format for output data",
+      "editor": "textfield",
+      "description": "Format for output data (json, jsonl, csv, xml, parquet)",
       "enum": ["json", "jsonl", "csv", "xml", "parquet"],
       "default": "json"
     },
     "filters": {
       "title": "Product Filters",
       "type": "object",
-      "editor": "json",
-      "description": "Filters to apply to scraped products",
+      "editor": "textarea",
+      "description": "Filters to apply to scraped products (JSON). Example: {\"min_price\":10,\"tags_any\":[\"sale\"]}",
       "properties": {
-        "min_price": { "type": "number", "editor": "number", "description": "Minimum price filter" },
-        "max_price": { "type": "number", "editor": "number", "description": "Maximum price filter" },
-        "currency": { "type": "string", "editor": "text", "description": "Currency filter (e.g., 'USD', 'EUR')" },
+        "min_price": { "type": "number", "editor": "textfield", "description": "Minimum price filter" },
+        "max_price": { "type": "number", "editor": "textfield", "description": "Maximum price filter" },
+        "currency": { "type": "string", "editor": "textfield", "description": "Currency filter (e.g., 'USD', 'EUR')" },
         "vendors": {
           "type": "array",
-          "editor": "array",
-          "items": { "type": "string", "editor": "text" },
-          "description": "Vendor filter - only products from these vendors"
+          "editor": "textarea",
+          "items": { "type": "string" },
+          "description": "Vendor filter - only products from these vendors (one per line)"
         },
         "product_types": {
           "type": "array",
-          "editor": "array",
-          "items": { "type": "string", "editor": "text" },
-          "description": "Product type filter"
+          "editor": "textarea",
+          "items": { "type": "string" },
+          "description": "Product type filter (one per line)"
         },
         "tags_any": {
           "type": "array",
-          "editor": "array",
-          "items": { "type": "string", "editor": "text" },
-          "description": "Products must have at least one of these tags"
+          "editor": "textarea",
+          "items": { "type": "string" },
+          "description": "Products must have at least one of these tags (one per line)"
         },
         "tags_all": {
           "type": "array",
-          "editor": "array",
-          "items": { "type": "string", "editor": "text" },
-          "description": "Products must have all of these tags"
+          "editor": "textarea",
+          "items": { "type": "string" },
+          "description": "Products must have all of these tags (one per line)"
         },
         "tags_exclude": {
           "type": "array",
-          "editor": "array",
-          "items": { "type": "string", "editor": "text" },
-          "description": "Products must not have any of these tags"
+          "editor": "textarea",
+          "items": { "type": "string" },
+          "description": "Products must not have any of these tags (one per line)"
         },
-        "availability": { "type": "boolean", "editor": "checkbox", "description": "Product availability filter" },
-        "min_inventory": { "type": "integer", "editor": "number", "description": "Minimum inventory quantity" },
-        "search_query": { "type": "string", "editor": "text", "description": "Search query to filter products by title/description" },
-        "handle_pattern": { "type": "string", "editor": "text", "description": "Regex pattern to match product handles" }
+        "availability": { "type": "boolean", "editor": "textfield", "description": "Product availability filter" },
+        "min_inventory": { "type": "integer", "editor": "textfield", "description": "Minimum inventory quantity" },
+        "search_query": { "type": "string", "editor": "textfield", "description": "Search query to filter products by title/description" },
+        "handle_pattern": { "type": "string", "editor": "textfield", "description": "Regex pattern to match product handles" }
       }
     },
     "extraction": {
       "title": "Extraction Options",
       "type": "object",
-      "editor": "json",
-      "description": "Options for data extraction",
+      "editor": "textarea",
+      "description": "Options for data extraction (JSON). Example: {\"include_custom_fields\": true}",
       "properties": {
         "include_custom_fields": {
           "type": "boolean",
-          "editor": "checkbox",
+          "editor": "textfield",
           "description": "Include custom metafields",
           "default": false
         }
@@ -126,16 +123,16 @@
     "performance": {
       "title": "Performance Settings",
       "type": "object",
-      "editor": "json",
-      "description": "Performance optimization settings",
+      "editor": "textarea",
+      "description": "Performance optimization settings (JSON).",
       "properties": {
-        "enable_http2": { "type": "boolean", "editor": "checkbox", "description": "Enable HTTP/2", "default": false },
-        "enable_connection_pooling": { "type": "boolean", "editor": "checkbox", "description": "Enable connection pooling", "default": true },
-        "enable_compression": { "type": "boolean", "editor": "checkbox", "description": "Enable compression", "default": true },
-        "enable_caching": { "type": "boolean", "editor": "checkbox", "description": "Enable response caching", "default": false },
-        "enable_retries": { "type": "boolean", "editor": "checkbox", "description": "Enable automatic retries", "default": true },
-        "max_retries": { "type": "integer", "editor": "number", "description": "Maximum number of retries", "default": 3, "minimum": 0, "maximum": 10 },
-        "retry_delay_ms": { "type": "integer", "editor": "number", "description": "Delay between retries in milliseconds", "default": 1000, "minimum": 100, "maximum": 10000 }
+        "enable_http2": { "type": "boolean", "editor": "textfield", "description": "Enable HTTP/2", "default": false },
+        "enable_connection_pooling": { "type": "boolean", "editor": "textfield", "description": "Enable connection pooling", "default": true },
+        "enable_compression": { "type": "boolean", "editor": "textfield", "description": "Enable compression", "default": true },
+        "enable_caching": { "type": "boolean", "editor": "textfield", "description": "Enable response caching", "default": false },
+        "enable_retries": { "type": "boolean", "editor": "textfield", "description": "Enable automatic retries", "default": true },
+        "max_retries": { "type": "integer", "editor": "textfield", "description": "Maximum number of retries", "default": 3, "minimum": 0, "maximum": 10 },
+        "retry_delay_ms": { "type": "integer", "editor": "textfield", "description": "Delay between retries in milliseconds", "default": 1000, "minimum": 100, "maximum": 10000 }
       }
     }
   }
