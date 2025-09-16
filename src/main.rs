@@ -146,10 +146,7 @@ async fn load_input() -> Result<ScraperInput> {
         output_format: OutputFormat::Json,
         filters: schema::ProductFilters::default(),
         extraction: schema::ExtractionOptions::default(),
-        performance: schema::PerformanceSettings {
-            enable_http2: false,
-            ..Default::default()
-        },
+        performance: schema::PerformanceSettings::default(),
     })
 }
 
@@ -197,10 +194,7 @@ async fn load_apify_input() -> Result<ScraperInput> {
             .unwrap_or(OutputFormat::Json),
         filters: schema::ProductFilters::default(),
         extraction: schema::ExtractionOptions::default(),
-        performance: schema::PerformanceSettings {
-            enable_http2: false,
-            ..Default::default()
-        },
+        performance: schema::PerformanceSettings::default(),
     };
     
     Ok(input)
