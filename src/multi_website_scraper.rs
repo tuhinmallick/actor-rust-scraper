@@ -327,7 +327,7 @@ impl MultiWebsiteScraper {
 
         for url in urls_to_try {
             if let Some(data) = self.fetch_with_cache(&url).await? {
-                if url.ends_with(".json") {
+                if url.contains(".json") {
                     if let Ok(json_data) = serde_json::from_slice::<serde_json::Value>(&data) {
                         if let Some(products) = json_data.get("products").and_then(|p| p.as_array()) {
                             let handles: Vec<String> = products
@@ -341,7 +341,7 @@ impl MultiWebsiteScraper {
                             }
                         }
                     }
-                } else if url.ends_with(".xml") {
+                } else if url.contains(".xml") {
                     if let Ok(content) = String::from_utf8(data) {
                         let handle_pattern = regex::Regex::new(r"/products/([^/]+)")?;
                         let handles: Vec<String> = handle_pattern
