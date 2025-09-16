@@ -276,8 +276,9 @@ async fn load_json_input() -> Result<ScraperInput> {
 async fn load_apify_input() -> Result<ScraperInput> {
     use std::fs;
     
-    // Read INPUT.json from Apify's local storage
-    let json_text = fs::read_to_string("INPUT.json")?;
+    // Read input from Apify's input storage (not INPUT.json)
+    let json_text = fs::read_to_string("apify_storage/key_value_stores/default/INPUT.JSON")
+        .or_else(|_| fs::read_to_string("INPUT.json"))?;
     
     // Parse the JSON input
     let input_value: Value = serde_json::from_str(&json_text)?;
