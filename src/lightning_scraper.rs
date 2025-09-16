@@ -107,8 +107,7 @@ impl LightningScraper {
         };
 
         // Build ultra-optimized HTTP client
-        let client = Client::builder()
-            .timeout(Duration::from_secs(config.timeout_seconds))
+        let mut client_builder = Client::builder()
             .user_agent(&scraper_config.user_agent)
             .redirect(reqwest::redirect::Policy::limited(scraper_config.max_redirects))
             .pool_max_idle_per_host(100) // Increased for speed
@@ -118,8 +117,14 @@ impl LightningScraper {
             .tcp_keepalive(Duration::from_secs(60))
             .tcp_nodelay(true) // Disable Nagle's algorithm
             .danger_accept_invalid_certs(true) // For Docker environments with SSL issues
-            .danger_accept_invalid_hostnames(true)
-            .build()?;
+            .danger_accept_invalid_hostnames(true);
+
+        // Only set timeout if it's greater than 0
+        if config.timeout_seconds > 0 {
+            client_builder = client_builder.timeout(Duration::from_secs(config.timeout_seconds));
+        }
+
+        let client = client_builder.build()?;
 
         let semaphore = Arc::new(Semaphore::new(config.global_max_concurrent));
 

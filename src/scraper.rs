@@ -35,11 +35,15 @@ impl ShopifyScraper {
         };
 
         let mut client_builder = Client::builder()
-            .timeout(Duration::from_secs(input.timeout_seconds))
             .user_agent(&config.user_agent)
             .redirect(reqwest::redirect::Policy::limited(config.max_redirects))
             .danger_accept_invalid_certs(true) // For Docker environments with SSL issues
             .danger_accept_invalid_hostnames(true);
+
+        // Only set timeout if it's greater than 0
+        if input.timeout_seconds > 0 {
+            client_builder = client_builder.timeout(Duration::from_secs(input.timeout_seconds));
+        }
 
         // Apply performance optimizations
         if input.performance.enable_connection_pooling {
@@ -339,9 +343,7 @@ impl ShopifyScraper {
     pub async fn scrape_product(&self, domain: &str, product_handle: &str) -> Result<Option<ShopifyProduct>> {
         let domain = self.normalize_domain(domain)?;
 
-        if !self.is_shopify_store(&domain) {
-            warn!("Domain {} may not be a Shopify store", domain);
-        }
+        // Skip Shopify store detection warning for custom domains
 
         match self.fetch_product_data(&domain, product_handle).await? {
             Some(raw_data) => {

@@ -99,8 +99,7 @@ impl MultiWebsiteScraper {
         };
 
         // Build optimized HTTP client
-        let client_builder = Client::builder()
-            .timeout(Duration::from_secs(config.timeout_seconds))
+        let mut client_builder = Client::builder()
             .user_agent(&scraper_config.user_agent)
             .redirect(reqwest::redirect::Policy::limited(scraper_config.max_redirects))
             .pool_max_idle_per_host(50) // Increased connection pooling
@@ -109,6 +108,11 @@ impl MultiWebsiteScraper {
             .brotli(true)
             .danger_accept_invalid_certs(true) // For Docker environments with SSL issues
             .danger_accept_invalid_hostnames(true);
+
+        // Only set timeout if it's greater than 0
+        if config.timeout_seconds > 0 {
+            client_builder = client_builder.timeout(Duration::from_secs(config.timeout_seconds));
+        }
 
         let client = client_builder.build()?;
         let semaphore = Arc::new(Semaphore::new(config.global_max_concurrent));
