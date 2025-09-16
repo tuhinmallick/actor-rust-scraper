@@ -38,14 +38,6 @@
       "minimum": 5,
       "maximum": 300
     },
-    "output_format": {
-      "title": "Output Format",
-      "type": "string",
-      "editor": "textfield",
-      "description": "Format for output data (json, jsonl, csv, xml, parquet)",
-      "enum": ["json", "jsonl", "csv", "xml", "parquet"],
-      "default": "json"
-    },
     "filters": {
       "title": "Product Filters",
       "type": "object",
