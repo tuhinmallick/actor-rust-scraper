@@ -31,5 +31,11 @@
     "retry_delay_ms": 2000,
     "rate_limit_per_domain_ms": 1000,
     "enable_exponential_backoff": true
+  },
+  "pagination": {
+    "limit": 250,
+    "page": 1,
+    "enable_pagination": true,
+    "max_pages": 0
   }
 }

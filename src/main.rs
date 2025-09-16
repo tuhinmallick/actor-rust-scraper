@@ -334,7 +334,9 @@ async fn load_apify_input() -> Result<ScraperInput> {
         extraction: schema::ExtractionOptions::default(),
         performance: schema::PerformanceSettings::default(),
         caching: schema::CachingSettings::default(),
-        pagination: schema::PaginationSettings::default(),
+        pagination: input_value.get("pagination")
+            .and_then(|p| serde_json::from_value(p.clone()).ok())
+            .unwrap_or_default(),
     };
     
     Ok(input)
