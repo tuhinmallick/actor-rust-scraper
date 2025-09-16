@@ -8,7 +8,8 @@
             "title": "Shopify Store Domain",
             "type": "string",
             "description": "The domain of the Shopify store to scrape (e.g., 'example.myshopify.com' or 'example.com')",
-            "prefill": "samapura.store"
+            "prefill": "samapura.store",
+            "editor": "textfield"
         },
         "product_handles": {
             "title": "Product Handles",
