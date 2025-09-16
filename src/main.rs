@@ -249,8 +249,8 @@ async fn load_input() -> Result<ScraperInput> {
     // Final fallback to default input
     info!("Using default input configuration");
     Ok(ScraperInput {
-        domain: "samapura.store".to_string(),
-        websites: vec!["samapura.store".to_string()],
+        domain: "example.com".to_string(),
+        websites: vec![],
         multi_website_mode: false,
         product_handles: vec![],
         auto_discover: true,
@@ -284,7 +284,7 @@ async fn load_apify_input() -> Result<ScraperInput> {
     // Extract and clean domain from input
     let raw_domain = input_value.get("domain")
         .and_then(|v| v.as_str())
-        .unwrap_or("samapura.store");
+        .unwrap_or("example.com");
     
     // Clean domain (remove protocol and trailing slash)
     let clean_domain = clean_domain_url(raw_domain);

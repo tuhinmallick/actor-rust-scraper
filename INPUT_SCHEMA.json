@@ -11,7 +11,7 @@
       "type": "string",
       "editor": "textfield",
       "description": "The domain of the Shopify store to scrape (e.g., 'example.myshopify.com' or 'example.com')",
-      "prefill": "samapura.store"
+      "prefill": "example.com"
     },
     "websites": {
       "title": "Multiple Websites",
